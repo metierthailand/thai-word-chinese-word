@@ -1,5 +1,12 @@
+import { ReactNode } from "react";
+
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
+
+import { Toaster } from "@/components/ui/sonner";
+import { getPreference } from "@/server/server-actions";
+import { THEME_MODE_VALUES, THEME_PRESET_VALUES, type ThemePreset, type ThemeMode } from "@/types/preferences/theme";
+
 import "./globals.css";
 import { Providers } from "@/components/Providers";
 
@@ -10,15 +17,22 @@ export const metadata: Metadata = {
   description: "Travel Agent CRM & Trip Management",
 };
 
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+export default async function RootLayout({ children }: Readonly<{ children: ReactNode }>) {
+  const themeMode = await getPreference<ThemeMode>("theme_mode", THEME_MODE_VALUES, "light");
+  const themePreset = await getPreference<ThemePreset>("theme_preset", THEME_PRESET_VALUES, "default");
+
   return (
-    <html lang="en">
-      <body className={inter.className}>
-        <Providers>{children}</Providers>
+    <html
+      lang="en"
+      className={themeMode === "dark" ? "dark" : ""}
+      data-theme-preset={themePreset}
+      suppressHydrationWarning
+    >
+      <body className={`${inter.className} min-h-screen antialiased`}>
+        <Providers themeMode={themeMode} themePreset={themePreset}>
+          {children}
+          <Toaster />
+        </Providers>
       </body>
     </html>
   );
