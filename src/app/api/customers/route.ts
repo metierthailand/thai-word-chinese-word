@@ -16,6 +16,7 @@ export async function GET() {
         createdAt: "desc",
       },
       include: {
+        passports: true,
         tags: {
           include: {
             tag: true,
@@ -40,20 +41,54 @@ export async function POST(req: Request) {
 
   try {
     const body = await req.json();
-    const { firstName, lastName, email, phone, lineId, type } = body;
+    const {
+      firstNameTh,
+      lastNameTh,
+      firstNameEn,
+      lastNameEn,
+      title,
+      nickname,
+      email,
+      phone,
+      lineId,
+      nationality,
+      dateOfBirth,
+      preferences,
+      type,
+      tagIds,
+    } = body;
 
-    if (!firstName || !lastName) {
-      return new NextResponse("First name and last name are required", { status: 400 });
+    if (!firstNameTh || !lastNameTh || !firstNameEn || !lastNameEn) {
+      return new NextResponse("First name and last name (both Thai and English) are required", { status: 400 });
     }
 
     const customer = await prisma.customer.create({
       data: {
-        firstName,
-        lastName,
-        email,
-        phone,
-        lineId,
+        firstNameTh,
+        lastNameTh,
+        firstNameEn,
+        lastNameEn,
+        title: title || undefined,
+        nickname: nickname || undefined,
+        email: email || undefined,
+        phone: phone || undefined,
+        lineId: lineId || undefined,
+        nationality: nationality || undefined,
+        dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : undefined,
+        preferences: preferences || undefined,
         type: type || "INDIVIDUAL",
+        tags: tagIds && tagIds.length > 0 ? {
+          create: tagIds.map((tagId: string) => ({
+            tagId,
+          })),
+        } : undefined,
+      },
+      include: {
+        tags: {
+          include: {
+            tag: true,
+          },
+        },
       },
     });
 

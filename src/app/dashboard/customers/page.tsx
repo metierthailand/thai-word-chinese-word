@@ -2,22 +2,19 @@
 
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Plus } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { Badge } from "@/components/ui/badge";
 
 interface Customer {
   id: string;
-  firstName: string;
-  lastName: string;
+  firstNameTh: string;
+  lastNameTh: string;
+  firstNameEn: string;
+  lastNameEn: string;
+  nickname: string | null;
   email: string | null;
   phone: string | null;
   type: "INDIVIDUAL" | "CORPORATE";
@@ -47,15 +44,13 @@ export default function CustomersPage() {
   }, []);
 
   return (
-    <div className="p-8 space-y-8">
+    <div className="space-y-8 p-8">
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-3xl font-bold tracking-tight">Customers</h2>
-          <p className="text-muted-foreground">
-            Manage your individual and corporate clients.
-          </p>
+          <p className="text-muted-foreground">Manage your individual and corporate clients.</p>
         </div>
-        <Link href="/dashboard/customers/new">
+        <Link href="/dashboard/customers/create">
           <Button>
             <Plus className="mr-2 h-4 w-4" /> Add Customer
           </Button>
@@ -90,19 +85,28 @@ export default function CustomersPage() {
               customers.map((customer) => (
                 <TableRow
                   key={customer.id}
-                  className="cursor-pointer hover:bg-muted/50"
+                  className="hover:bg-muted/50 cursor-pointer"
                   onClick={() => router.push(`/dashboard/customers/${customer.id}`)}
                 >
                   <TableCell className="font-medium">
-                    {customer.firstName} {customer.lastName}
+                    {`${customer.firstNameTh} ${customer.lastNameTh}`}
+                    <span className="text-muted-foreground ml-2 text-sm">
+                      ({customer.firstNameEn} {customer.lastNameEn})
+                    </span>
                   </TableCell>
-                  <TableCell>{customer.type}</TableCell>
+                  <TableCell>
+                    <Badge variant='outline'>
+                    {customer.type}
+                    </Badge>
+                  </TableCell>
                   <TableCell>{customer.email || "-"}</TableCell>
                   <TableCell>{customer.phone || "-"}</TableCell>
-                  <TableCell className="text-right">
-                    <Button variant="ghost" size="sm">
-                      View
-                    </Button>
+                  <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
+                    <Link href={`/dashboard/customers/${customer.id}/edit`}>
+                      <Button variant="ghost" size="sm">
+                        Edit
+                      </Button>
+                    </Link>
                   </TableCell>
                 </TableRow>
               ))

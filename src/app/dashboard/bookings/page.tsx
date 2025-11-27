@@ -19,7 +19,10 @@ import { format } from "date-fns";
 interface Booking {
   id: string;
   customer: {
-    firstName: string;
+    firstNameTh: string;
+    lastNameTh: string;
+    firstNameEn: string;
+    lastNameEn: string;
     lastName: string;
   };
   trip: {
@@ -124,7 +127,7 @@ export default function BookingsPage() {
                   onClick={() => router.push(`/dashboard/bookings/${booking.id}`)}
                 >
                   <TableCell className="font-medium">
-                    {booking.customer.firstName} {booking.customer.lastName}
+                    {`${booking.customer.firstNameTh} ${booking.customer.lastNameTh}`}
                   </TableCell>
                   <TableCell>
                     <div className="flex flex-col">

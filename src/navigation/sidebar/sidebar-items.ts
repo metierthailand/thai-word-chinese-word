@@ -4,6 +4,7 @@ import {
   Target,
   Calendar,
   Plane,
+  Tag,
   type LucideIcon,
 } from "lucide-react";
 
@@ -46,6 +47,11 @@ export const sidebarItems: NavGroup[] = [
         title: "Customers",
         url: "/dashboard/customers",
         icon: Users,
+      },
+      {
+        title: "Tags",
+        url: "/dashboard/tags",
+        icon: Tag,
       },
       {
         title: "Leads",

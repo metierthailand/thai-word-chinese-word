@@ -2,6 +2,7 @@ import { ReactNode } from "react";
 
 import { cookies } from "next/headers";
 import { getServerSession } from "next-auth";
+import { redirect } from "next/navigation";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
@@ -22,7 +23,6 @@ import {
 } from "@/types/preferences/layout";
 
 import { AccountSwitcher } from "./_components/sidebar/account-switcher";
-import { LayoutControls } from "./_components/sidebar/layout-controls";
 import { SearchDialog } from "./_components/sidebar/search-dialog";
 import { ThemeSwitcher } from "./_components/sidebar/theme-switcher";
 import { AppSidebar } from "./_components/sidebar/app-sidebar";
@@ -32,6 +32,10 @@ export default async function Layout({ children }: Readonly<{ children: ReactNod
   const defaultOpen = cookieStore.get("sidebar_state")?.value === "true";
 
   const session = await getServerSession(authOptions);
+
+  if (!session) {
+    redirect("/login");
+  }
 
   const [sidebarVariant, sidebarCollapsible, contentLayout, navbarStyle, users] = await Promise.all([
     getPreference<SidebarVariant>("sidebar_variant", SIDEBAR_VARIANT_VALUES, "inset"),
@@ -98,7 +102,6 @@ export default async function Layout({ children }: Readonly<{ children: ReactNod
               <SearchDialog />
             </div>
             <div className="flex items-center gap-2">
-              <LayoutControls {...layoutPreferences} />
               <ThemeSwitcher />
               {users.length > 0 && <AccountSwitcher users={users} />}
             </div>

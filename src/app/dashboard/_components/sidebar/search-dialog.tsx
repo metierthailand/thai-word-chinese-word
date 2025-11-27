@@ -2,7 +2,7 @@
 import * as React from "react";
 import { useRouter } from "next/navigation";
 
-import { LayoutDashboard, Users, Target, Calendar, Plane, Search } from "lucide-react";
+import { LayoutDashboard, Users, Target, Calendar, Plane, Search, Tag } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -18,6 +18,7 @@ import {
 const searchItems = [
   { group: "Main", icon: LayoutDashboard, label: "Dashboard", url: "/dashboard" },
   { group: "Main", icon: Users, label: "Customers", url: "/dashboard/customers" },
+  { group: "Main", icon: Tag, label: "Tags", url: "/dashboard/tags" },
   { group: "Main", icon: Target, label: "Leads", url: "/dashboard/leads" },
   { group: "Main", icon: Calendar, label: "Bookings", url: "/dashboard/bookings" },
   { group: "Main", icon: Plane, label: "Trips", url: "/dashboard/trips" },

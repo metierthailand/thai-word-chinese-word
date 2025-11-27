@@ -39,11 +39,22 @@ enum CustomerType {
   CORPORATE
 }
 
+enum Title {
+  MR
+  MRS
+  MS
+  OTHER
+}
+
 model Customer {
   id          String       @id @default(uuid())
   type        CustomerType @default(INDIVIDUAL)
-  firstName   String
-  lastName    String
+  title       Title?
+  firstNameTh String
+  lastNameTh  String
+  firstNameEn String
+  lastNameEn  String
+  
   nickname    String?
   email       String?
   phone       String?
@@ -78,7 +89,6 @@ model Passport {
 model Tag {
   id        String        @id @default(uuid())
   name      String        @unique
-  color     String?
   customers CustomerTag[]
 }
 

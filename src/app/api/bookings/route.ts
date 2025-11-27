@@ -18,8 +18,10 @@ export async function GET() {
       include: {
         customer: {
           select: {
-            firstName: true,
-            lastName: true,
+            firstNameTh: true,
+            lastNameTh: true,
+            firstNameEn: true,
+            lastNameEn: true,
             email: true,
           },
         },
