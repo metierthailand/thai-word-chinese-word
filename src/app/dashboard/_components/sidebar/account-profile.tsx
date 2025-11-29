@@ -58,13 +58,17 @@ export function AccountProfile({
         </div>
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
-          <DropdownMenuItem>
-            <BadgeCheck className="mr-2 h-4 w-4" />
-            Account
+          <DropdownMenuItem asChild>
+            <Link href="/dashboard/account?tab=account" className="flex items-center gap-4">
+              <BadgeCheck className="h-4 w-4" />
+              Account
+            </Link>
           </DropdownMenuItem>
-          <DropdownMenuItem>
-            <CreditCard className="mr-2 h-4 w-4" />
-            Billing
+          <DropdownMenuItem asChild>
+            <Link href="/dashboard/account?tab=billing" className="flex items-center gap-4">
+              <CreditCard className="h-4 w-4" />
+              Billing
+            </Link>
           </DropdownMenuItem>
           <DropdownMenuItem>
             <Link href="/dashboard/notifications" className="flex items-center gap-4">

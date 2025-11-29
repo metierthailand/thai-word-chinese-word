@@ -35,6 +35,7 @@ import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useSearchCustomers, useCustomer } from "@/app/dashboard/customers/hooks/use-customers";
 import { Booking } from "../hooks/use-bookings";
+import { useTrips} from "@/app/dashboard/trips/hooks/use-trips";
 
 const formSchema = z.object({
   customerId: z.string().min(1, { message: "Customer is required" }),
@@ -46,16 +47,6 @@ const formSchema = z.object({
 });
 
 export type BookingFormValues = z.infer<typeof formSchema>;
-
-interface Trip {
-  id: string;
-  name: string;
-  startDate: string;
-  endDate: string;
-  price?: number | null;
-  maxCapacity: number;
-  _count: { bookings: number };
-}
 
 interface BookingFormProps {
   mode: "create" | "edit" | "view";
@@ -75,9 +66,26 @@ export function BookingForm({
   booking,
 }: BookingFormProps) {
   const readOnly = mode === "view";
-  const [trips, setTrips] = useState<Trip[]>([]);
   const [customerSearchOpen, setCustomerSearchOpen] = useState(false);
   const [customerSearchQuery, setCustomerSearchQuery] = useState("");
+
+  // Get today's date in YYYY-MM-DD format for filtering trips that haven't started
+  const today = format(new Date(), "yyyy-MM-dd");
+  
+  // Fetch trips using TanStack Query - filter for trips that haven't started yet
+  const { data: tripsResponse } = useTrips(1, 1000, undefined, today, undefined);
+  
+  // Filter trips to only include those that haven't started (startDate >= today)
+  const trips = useMemo(() => {
+    if (!tripsResponse?.data) return [];
+    const now = new Date();
+    now.setHours(0, 0, 0, 0); // Reset time to start of day for comparison
+    return tripsResponse.data.filter((trip) => {
+      const tripStartDate = new Date(trip.startDate);
+      tripStartDate.setHours(0, 0, 0, 0);
+      return tripStartDate >= now;
+    });
+  }, [tripsResponse?.data]);
 
   const form = useForm<BookingFormValues>({
     resolver: zodResolver(formSchema),
@@ -142,17 +150,6 @@ export function BookingForm({
     return bookingCustomerData || null;
   }, [customerId, searchResults, selectedCustomerData, booking, bookingCustomerData, mode]);
 
-  useEffect(() => {
-    const fetchTrips = async () => {
-      // Fetch all trips for dropdown (use large pageSize to get all)
-      const tripsRes = await fetch("/api/trips?page=1&pageSize=1000");
-      if (tripsRes.ok) {
-        const response = await tripsRes.json();
-        setTrips(response.data || []);
-      }
-    };
-    fetchTrips();
-  }, []);
 
   // Reset form when initialData changes (for edit mode)
   useEffect(() => {
