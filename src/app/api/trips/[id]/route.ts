@@ -3,28 +3,22 @@ import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 
-export async function GET(request: Request) {
+export async function GET(
+  req: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
   const session = await getServerSession(authOptions);
 
   if (!session) {
     return new NextResponse("Unauthorized", { status: 401 });
   }
 
+  const { id } = await params;
+
   try {
-    const { searchParams } = new URL(request.url);
-    const page = parseInt(searchParams.get("page") || "1", 10);
-    const pageSize = parseInt(searchParams.get("pageSize") || "10", 10);
-    const skip = (page - 1) * pageSize;
-
-    // Get total count for pagination
-    const total = await prisma.trip.count();
-
-    // Fetch paginated trips
-    const trips = await prisma.trip.findMany({
-      skip,
-      take: pageSize,
-      orderBy: {
-        startDate: "asc",
+    const trip = await prisma.trip.findUnique({
+      where: {
+        id: id,
       },
       include: {
         _count: {
@@ -33,25 +27,28 @@ export async function GET(request: Request) {
       },
     });
 
-    return NextResponse.json({
-      data: trips,
-      total,
-      page,
-      pageSize,
-      totalPages: Math.ceil(total / pageSize),
-    });
+    if (!trip) {
+      return new NextResponse("Trip not found", { status: 404 });
+    }
+
+    return NextResponse.json(trip);
   } catch (error) {
-    console.error("[TRIPS_GET]", error);
+    console.error("[TRIP_GET]", error);
     return new NextResponse("Internal Error", { status: 500 });
   }
 }
 
-export async function POST(req: Request) {
+export async function PUT(
+  req: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
   const session = await getServerSession(authOptions);
 
   if (!session) {
     return new NextResponse("Unauthorized", { status: 401 });
   }
+
+  const { id } = await params;
 
   try {
     const body = await req.json();
@@ -61,21 +58,30 @@ export async function POST(req: Request) {
       return new NextResponse("Missing required fields", { status: 400 });
     }
 
-    const trip = await prisma.trip.create({
+    const trip = await prisma.trip.update({
+      where: {
+        id: id,
+      },
       data: {
         name,
         destination,
         startDate: new Date(startDate),
         endDate: new Date(endDate),
         maxCapacity: parseInt(maxCapacity),
-        description,
+        description: description || null,
         price: price ? parseFloat(price) : null,
+      },
+      include: {
+        _count: {
+          select: { bookings: true },
+        },
       },
     });
 
     return NextResponse.json(trip);
   } catch (error) {
-    console.error("[TRIPS_POST]", error);
+    console.error("[TRIP_PUT]", error);
     return new NextResponse("Internal Error", { status: 500 });
   }
 }
+

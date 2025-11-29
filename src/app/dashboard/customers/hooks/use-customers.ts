@@ -79,14 +79,21 @@ interface CustomersResponse {
 export const customerKeys = {
   all: ["customers"] as const,
   lists: () => [...customerKeys.all, "list"] as const,
-  list: (page: number, pageSize: number) => [...customerKeys.lists(), page, pageSize] as const,
+  list: (page: number, pageSize: number, search?: string) => [...customerKeys.lists(), page, pageSize, search] as const,
   details: () => [...customerKeys.all, "detail"] as const,
   detail: (id: string) => [...customerKeys.details(), id] as const,
 };
 
 // Fetch customers function
-async function fetchCustomers(page: number = 1, pageSize: number = 10): Promise<CustomersResponse> {
-  const res = await fetch(`/api/customers?page=${page}&pageSize=${pageSize}`);
+async function fetchCustomers(page: number = 1, pageSize: number = 10, search?: string): Promise<CustomersResponse> {
+  const params = new URLSearchParams({
+    page: page.toString(),
+    pageSize: pageSize.toString(),
+  });
+  if (search && search.trim()) {
+    params.set("search", search.trim());
+  }
+  const res = await fetch(`/api/customers?${params.toString()}`);
   if (!res.ok) {
     throw new Error("Failed to fetch customers");
   }
@@ -159,10 +166,10 @@ async function updateCustomer({ id, data }: { id: string; data: CustomerFormValu
 }
 
 // Hook to fetch customers with pagination
-export function useCustomers(page: number, pageSize: number) {
+export function useCustomers(page: number, pageSize: number, search?: string) {
   return useQuery({
-    queryKey: customerKeys.list(page, pageSize),
-    queryFn: () => fetchCustomers(page, pageSize),
+    queryKey: customerKeys.list(page, pageSize, search),
+    queryFn: () => fetchCustomers(page, pageSize, search),
     staleTime: 30 * 1000, // 30 seconds
   });
 }

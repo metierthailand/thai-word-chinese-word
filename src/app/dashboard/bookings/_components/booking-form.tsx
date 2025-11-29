@@ -143,9 +143,11 @@ export function BookingForm({
 
   useEffect(() => {
     const fetchTrips = async () => {
-      const tripsRes = await fetch("/api/trips");
+      // Fetch all trips for dropdown (use large pageSize to get all)
+      const tripsRes = await fetch("/api/trips?page=1&pageSize=1000");
       if (tripsRes.ok) {
-        setTrips(await tripsRes.json());
+        const response = await tripsRes.json();
+        setTrips(response.data || []);
       }
     };
     fetchTrips();

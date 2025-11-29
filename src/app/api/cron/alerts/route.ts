@@ -172,7 +172,7 @@ export async function GET() {
                 type: "TRIP_UPCOMING",
                 title: "Upcoming Trip",
                 message: `Trip "${trip.name}" for ${booking.customer.firstNameEn} ${booking.customer.lastNameEn} starts on ${trip.startDate.toLocaleDateString()}`,
-                link: `/dashboard/bookings/${booking.id}`,
+                link: `/dashboard/bookings/${booking.id}/edit`,
                 entityId: booking.id,
               },
             });

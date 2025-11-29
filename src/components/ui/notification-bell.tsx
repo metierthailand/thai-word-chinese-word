@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Bell, Check, RefreshCw } from "lucide-react";
+import { Bell, RefreshCw } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
@@ -27,23 +27,21 @@ export function NotificationBell() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [isOpen, setIsOpen] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
   const [isChecking, setIsChecking] = useState(false);
   const router = useRouter();
 
   const fetchNotifications = async () => {
-    setIsLoading(true);
     try {
-      const res = await fetch("/api/notifications");
+      // Fetch only unread notifications for the bell
+      const res = await fetch("/api/notifications?isRead=false&pageSize=20");
       if (res.ok) {
-        const data = await res.json();
-        setNotifications(data);
-        setUnreadCount(data.filter((n: Notification) => !n.isRead).length);
+        const response = await res.json();
+        const notifications = response.data || [];
+        setNotifications(notifications);
+        setUnreadCount(notifications.filter((n: Notification) => !n.isRead).length);
       }
     } catch (error) {
       console.error("Failed to fetch notifications", error);
-    } finally {
-      setIsLoading(false);
     }
   };
 
