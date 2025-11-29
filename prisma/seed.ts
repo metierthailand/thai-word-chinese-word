@@ -24,7 +24,7 @@ async function main() {
       email: superAdminEmail,
       password: password,
       name: 'Super Admin',
-      role: Role.SUPER_ADMIN,
+      role: Role.ADMIN,
       commissionRate: 0,
       isActive: true,
     },
@@ -43,7 +43,7 @@ async function main() {
       password: password,
       name: 'Admin',
       role: Role.ADMIN,
-      commissionRate: 0,
+      commissionRate: 10,
       isActive: true,
     },
   });

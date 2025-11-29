@@ -86,7 +86,7 @@ export const sidebarItems: NavGroup[] = [
         title: "Admin Management",
         url: "/dashboard/admin",
         icon: UserStar,
-        roles: ["SUPER_ADMIN"],
+        roles: ["ADMIN"],
       },
     ],
   },

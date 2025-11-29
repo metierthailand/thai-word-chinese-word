@@ -2,14 +2,14 @@
 // Update this file when Role enum changes in schema
 
 // Role enum values (must match prisma/schema.prisma)
-export const ROLE_VALUES = ["SUPER_ADMIN", "ADMIN"] as const;
+export const ROLE_VALUES = ["ADMIN", "AGENT"] as const;
 
 export type Role = (typeof ROLE_VALUES)[number];
 
 // Role display labels mapping
 export const ROLE_LABELS: Record<Role, string> = {
-  SUPER_ADMIN: "Super Admin",
   ADMIN: "Admin",
+  AGENT: "Agent",
 };
 
 // Helper function to get role label

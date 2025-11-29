@@ -123,7 +123,7 @@ export function UserDialog({ open, onOpenChange, user, onSaved }: UserDialogProp
               </SelectTrigger>
               <SelectContent>
                 {ROLE_VALUES.map((role) => {
-                  if (role === "SUPER_ADMIN" && user?.role !== "SUPER_ADMIN") {
+                  if (role === "ADMIN" && user?.role !== "ADMIN") {
                     return null;
                   }
                   return (

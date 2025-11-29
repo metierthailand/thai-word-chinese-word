@@ -56,8 +56,8 @@ export default function AdminPage() {
     return <Loading />;
   }
 
-  // Show unauthorized message if not SUPER_ADMIN
-  if (!session || session.user.role !== "SUPER_ADMIN") {
+  // Show unauthorized message if not ADMIN
+  if (!session || session.user.role !== "ADMIN") {
     return <AccessDenied />;
   }
 

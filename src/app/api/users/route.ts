@@ -2,14 +2,13 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import bcrypt from "bcryptjs";
 import crypto from "crypto";
 import { sendResetPasswordEmail } from "@/lib/email";
 
 export async function GET() {
   const session = await getServerSession(authOptions);
 
-  if (!session || session.user.role !== "SUPER_ADMIN") {
+  if (!session || session.user.role !== "ADMIN") {
     return new NextResponse("Unauthorized", { status: 401 });
   }
 
@@ -72,7 +71,7 @@ export async function GET() {
 export async function POST(req: Request) {
   const session = await getServerSession(authOptions);
 
-  if (!session || session.user.role !== "SUPER_ADMIN") {
+  if (!session || session.user.role !== "ADMIN") {
     return new NextResponse("Unauthorized", { status: 401 });
   }
 
