@@ -47,8 +47,9 @@ export const leadKeys = {
     status?: string,
     source?: string,
     minPotential?: string,
-    maxPotential?: string
-  ) => [...leadKeys.lists(), page, pageSize, search, status, source, minPotential, maxPotential] as const,
+    maxPotential?: string,
+    customerId?: string
+  ) => [...leadKeys.lists(), page, pageSize, search, status, source, minPotential, maxPotential, customerId] as const,
   details: () => [...leadKeys.all, "detail"] as const,
   detail: (id: string) => [...leadKeys.details(), id] as const,
 };
@@ -61,7 +62,8 @@ async function fetchLeads(
   status?: string,
   source?: string,
   minPotential?: string,
-  maxPotential?: string
+  maxPotential?: string,
+  customerId?: string
 ): Promise<LeadsResponse> {
   const params = new URLSearchParams({
     page: page.toString(),
@@ -82,6 +84,9 @@ async function fetchLeads(
   }
   if (maxPotential) {
     params.set("maxPotential", maxPotential);
+  }
+  if (customerId) {
+    params.set("customerId", customerId);
   }
 
   const res = await fetch(`/api/leads?${params.toString()}`);
@@ -182,11 +187,12 @@ export function useLeads(
   status?: string,
   source?: string,
   minPotential?: string,
-  maxPotential?: string
+  maxPotential?: string,
+  customerId?: string
 ) {
   return useQuery({
-    queryKey: leadKeys.list(page, pageSize, search, status, source, minPotential, maxPotential),
-    queryFn: () => fetchLeads(page, pageSize, search, status, source, minPotential, maxPotential),
+    queryKey: leadKeys.list(page, pageSize, search, status, source, minPotential, maxPotential, customerId),
+    queryFn: () => fetchLeads(page, pageSize, search, status, source, minPotential, maxPotential, customerId),
     staleTime: 30 * 1000, // 30 seconds
   });
 }

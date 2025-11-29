@@ -5,6 +5,7 @@ export interface Booking {
   id: string;
   customerId: string;
   tripId: string;
+  leadId?: string | null;
   customer: {
     firstNameTh: string;
     lastNameTh: string;
@@ -127,7 +128,8 @@ async function fetchBooking(id: string): Promise<Booking> {
 async function createBooking(data: {
   customerId: string;
   tripId: string;
-  totalAmount: number;
+  leadId?: string;
+  totalAmount?: number;
   paidAmount?: number;
   status?: string;
   visaStatus?: string;
@@ -157,6 +159,7 @@ async function updateBooking({
   data: {
     customerId?: string;
     tripId?: string;
+    leadId?: string;
     totalAmount?: number;
     paidAmount?: number;
     status?: string;
@@ -176,7 +179,13 @@ async function updateBooking({
     throw new Error(error.error || "Failed to update booking");
   }
 
-  return res.json();
+  const responseData = await res.json();
+  // Convert Decimal fields to numbers
+  return {
+    ...responseData,
+    totalAmount: Number(responseData.totalAmount),
+    paidAmount: Number(responseData.paidAmount),
+  };
 }
 
 // Delete booking function

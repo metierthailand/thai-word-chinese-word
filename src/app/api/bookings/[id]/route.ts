@@ -86,10 +86,23 @@ export async function PUT(
 
     if (customerId !== undefined && customerId !== "") updateData.customerId = customerId;
     if (tripId !== undefined && tripId !== "") updateData.tripId = tripId;
-    if (totalAmount !== undefined) updateData.totalAmount = parseFloat(totalAmount);
     if (paidAmount !== undefined) updateData.paidAmount = parseFloat(paidAmount);
     if (status !== undefined && status !== "") updateData.status = status;
     if (visaStatus !== undefined && visaStatus !== "") updateData.visaStatus = visaStatus;
+
+    // Handle totalAmount: use trip.price if not provided
+    if (totalAmount !== undefined && parseFloat(totalAmount) > 0) {
+      updateData.totalAmount = parseFloat(totalAmount);
+    } else if (tripId !== undefined && tripId !== "") {
+      // If tripId is being updated and totalAmount is not provided, use trip.price
+      const trip = await prisma.trip.findUnique({
+        where: { id: tripId },
+        select: { price: true },
+      });
+      if (trip && trip.price) {
+        updateData.totalAmount = Number(trip.price);
+      }
+    }
 
     const booking = await prisma.booking.update({
       where: {

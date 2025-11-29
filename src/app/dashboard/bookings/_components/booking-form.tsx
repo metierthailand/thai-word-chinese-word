@@ -36,10 +36,12 @@ import { cn } from "@/lib/utils";
 import { useSearchCustomers, useCustomer } from "@/app/dashboard/customers/hooks/use-customers";
 import { Booking } from "../hooks/use-bookings";
 import { useTrips} from "@/app/dashboard/trips/hooks/use-trips";
+import { useLeads } from "@/app/dashboard/leads/hooks/use-leads";
 
 const formSchema = z.object({
   customerId: z.string().min(1, { message: "Customer is required" }),
   tripId: z.string().min(1, { message: "Trip is required" }),
+  leadId: z.string().optional(),
   totalAmount: z.string().min(1, { message: "Total amount is required" }),
   paidAmount: z.string().optional(),
   status: z.string().optional(),
@@ -92,6 +94,7 @@ export function BookingForm({
     defaultValues: {
       customerId: "",
       tripId: "",
+      leadId: "no_lead", // Use a specific value for "No Lead" to handle Select reset
       totalAmount: "",
       paidAmount: "0",
       status: "PENDING",
@@ -100,6 +103,11 @@ export function BookingForm({
   });
 
   const customerId = form.watch("customerId");
+  
+  // Fetch leads for the selected customer
+  const { data: leadsResponse } = useLeads(1, 100, undefined, undefined, undefined, undefined, undefined, customerId);
+  const customerLeads = leadsResponse?.data || [];
+
   const { data: searchResults = [], isLoading: isSearching } = useSearchCustomers(
     customerSearchQuery,
     10
@@ -157,6 +165,7 @@ export function BookingForm({
       form.reset({
         customerId: initialData.customerId || "",
         tripId: initialData.tripId || "",
+        leadId: initialData.leadId || "no_lead",
         totalAmount: initialData.totalAmount || "",
         paidAmount: initialData.paidAmount || "0",
         status: initialData.status || "PENDING",
@@ -178,6 +187,7 @@ export function BookingForm({
     // Transform empty strings to undefined for status and visaStatus
     const transformedValues: BookingFormValues = {
       ...values,
+      leadId: values.leadId === "no_lead" ? undefined : values.leadId,
       status: values.status === "" ? undefined : values.status,
       visaStatus: values.visaStatus === "" ? undefined : values.visaStatus,
     };
@@ -283,6 +293,49 @@ export function BookingForm({
 
         <FormField
           control={form.control}
+          name="leadId"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Lead (Optional)</FormLabel>
+              {readOnly ? (
+                <FormControl>
+                  <Input
+                    value={
+                      booking?.leadId
+                        ? "Linked to Lead" // Ideally fetch lead details to show
+                        : "No Lead"
+                    }
+                    disabled
+                  />
+                </FormControl>
+              ) : (
+                <Select
+                  onValueChange={field.onChange}
+                  value={field.value}
+                  disabled={!customerId || customerLeads.length === 0}
+                >
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder={!customerId ? "Select a customer first" : customerLeads.length === 0 ? "No leads found" : "Select a lead"} />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value="no_lead">No Lead</SelectItem>
+                    {customerLeads.map((lead) => (
+                      <SelectItem key={lead.id} value={lead.id}>
+                        {lead.source} - {lead.status} ({format(new Date(lead.createdAt), "dd MMM")})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
           name="tripId"
           render={({ field }) => (
             <FormItem>
@@ -331,7 +384,7 @@ export function BookingForm({
               <FormItem>
                 <FormLabel>Total Amount (THB)</FormLabel>
                 <FormControl>
-                  <Input type="number" placeholder="0.00" {...field} disabled={readOnly} />
+                  <Input type="number" placeholder="0.00" {...field} disabled />
                 </FormControl>
                 <FormMessage />
               </FormItem>

@@ -148,21 +148,59 @@ export async function POST(req: Request) {
     const {
       customerId,
       tripId,
+      leadId,
       totalAmount,
       paidAmount,
       status,
       visaStatus,
     } = body;
 
-    if (!customerId || !tripId) {
+    let finalCustomerId = customerId;
+
+    // If leadId is provided but customerId is missing, try to find customer from lead
+    if (leadId && !finalCustomerId) {
+      const lead = await prisma.lead.findUnique({
+        where: { id: leadId },
+        select: { customerId: true },
+      });
+
+      if (lead) {
+        finalCustomerId = lead.customerId;
+      } else {
+        return new NextResponse("Invalid Lead ID", { status: 400 });
+      }
+    }
+
+    if (!finalCustomerId || !tripId) {
       return new NextResponse("Missing required fields", { status: 400 });
+    }
+
+    // Get trip to use its price if totalAmount is not provided
+    const trip = await prisma.trip.findUnique({
+      where: { id: tripId },
+      select: { price: true },
+    });
+
+    if (!trip) {
+      return new NextResponse("Trip not found", { status: 404 });
+    }
+
+    // Use trip.price if totalAmount is not provided or is 0
+    let finalTotalAmount: number;
+    if (totalAmount && parseFloat(totalAmount) > 0) {
+      finalTotalAmount = parseFloat(totalAmount);
+    } else if (trip.price) {
+      finalTotalAmount = Number(trip.price);
+    } else {
+      return new NextResponse("Total amount is required (trip has no price)", { status: 400 });
     }
 
     const booking = await prisma.booking.create({
       data: {
-        customerId,
+        customerId: finalCustomerId,
         tripId,
-        totalAmount: parseFloat(totalAmount),
+        leadId,
+        totalAmount: finalTotalAmount,
         paidAmount: parseFloat(paidAmount || 0),
         status: status || "PENDING",
         visaStatus: visaStatus || "NOT_REQUIRED",

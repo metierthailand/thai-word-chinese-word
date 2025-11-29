@@ -2,11 +2,9 @@ import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { CustomerInteractions } from "@/app/dashboard/customers/_components/customer-interactions";
-import { CustomerTasks } from "@/app/dashboard/customers/_components/customer-tasks";
 import { PassportManager } from "@/app/dashboard/customers/_components/passport-manager";
+import { CustomerTabs } from "./_components/customer-tabs";
 import { ArrowLeft, Mail, Phone, MapPin, Calendar } from "lucide-react";
 import Link from "next/link";
 import { format } from "date-fns";
@@ -131,66 +129,12 @@ export default async function CustomerDetailPage({ params }: { params: Promise<{
 
         {/* Right Column: Tabs */}
         <div className="md:col-span-2">
-          <Tabs defaultValue="interactions" className="w-full">
-            <TabsList className="grid w-full grid-cols-4">
-              <TabsTrigger value="interactions">Interactions</TabsTrigger>
-              <TabsTrigger value="tasks">Tasks</TabsTrigger>
-              <TabsTrigger value="leads">Leads</TabsTrigger>
-              <TabsTrigger value="bookings">Bookings</TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="interactions" className="mt-6">
-              <CustomerInteractions customerId={customer.id} />
-            </TabsContent>
-
-            <TabsContent value="tasks" className="mt-6">
-              <CustomerTasks customerId={customer.id} initialTasks={clientTasks} />
-            </TabsContent>
-
-            <TabsContent value="leads" className="mt-6">
-              <div className="space-y-4">
-                {customer.leads.length === 0 ? (
-                  <p className="text-muted-foreground">No leads found.</p>
-                ) : (
-                  customer.leads.map((lead) => (
-                    <div key={lead.id} className="flex items-center justify-between rounded-md border p-4">
-                      <div>
-                        <div className="font-medium">{lead.destinationInterest || "General Inquiry"}</div>
-                        <div className="text-muted-foreground text-sm">Status: {lead.status}</div>
-                      </div>
-                      <Link href={`/dashboard/leads/${lead.id}`}>
-                        <Button variant="outline" size="sm">
-                          View
-                        </Button>
-                      </Link>
-                    </div>
-                  ))
-                )}
-              </div>
-            </TabsContent>
-
-            <TabsContent value="bookings" className="mt-6">
-              <div className="space-y-4">
-                {customer.bookings.length === 0 ? (
-                  <p className="text-muted-foreground">No bookings found.</p>
-                ) : (
-                  customer.bookings.map((booking) => (
-                    <Link key={booking.id} href={`/dashboard/bookings/${booking.id}`}>
-                      <div className="rounded-md border p-4">
-                        <div className="font-medium">{booking.trip.name}</div>
-                        <div className="text-muted-foreground text-sm">
-                          {format(booking.trip.startDate, "PP")} - {format(booking.trip.endDate, "PP")}
-                        </div>
-                        <div className="text-muted-foreground mt-1 text-xs">
-                          Status: {booking.status} | Amount: {booking.totalAmount.toString()}
-                        </div>
-                      </div>
-                    </Link>
-                  ))
-                )}
-              </div>
-            </TabsContent>
-          </Tabs>
+          <CustomerTabs
+            customerId={customer.id}
+            initialTasks={clientTasks}
+            leads={customer.leads}
+            bookings={customer.bookings}
+          />
         </div>
       </div>
     </div>

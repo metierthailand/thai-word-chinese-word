@@ -4,8 +4,11 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { format } from "date-fns";
-import { Calendar } from "lucide-react";
+import { Calendar as CalendarIcon } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface Task {
   id: string;
@@ -23,7 +26,7 @@ interface CustomerTasksProps {
 export function CustomerTasks({ customerId, initialTasks }: CustomerTasksProps) {
   const [tasks, setTasks] = useState(initialTasks);
   const [title, setTitle] = useState("");
-  const [dueDate, setDueDate] = useState("");
+  const [dueDate, setDueDate] = useState<Date | undefined>(undefined);
   const [loading, setLoading] = useState(false);
 
   const handleAddTask = async () => {
@@ -35,7 +38,7 @@ export function CustomerTasks({ customerId, initialTasks }: CustomerTasksProps) 
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           title,
-          dueDate,
+          dueDate: format(dueDate, "yyyy-MM-dd"),
           relatedCustomerId: customerId,
           priority: "MEDIUM",
         }),
@@ -44,7 +47,7 @@ export function CustomerTasks({ customerId, initialTasks }: CustomerTasksProps) 
         const newTask = await res.json();
         setTasks([...tasks, newTask]);
         setTitle("");
-        setDueDate("");
+        setDueDate(undefined);
       }
     } catch (error) {
       console.error(error);
@@ -64,12 +67,29 @@ export function CustomerTasks({ customerId, initialTasks }: CustomerTasksProps) 
             onChange={(e) => setTitle(e.target.value)}
             className="flex-1"
           />
-          <Input
-            type="date"
-            value={dueDate}
-            onChange={(e) => setDueDate(e.target.value)}
-            className="w-[180px]"
-          />
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                className={cn(
+                  "w-[180px] justify-start text-left font-normal",
+                  !dueDate && "text-muted-foreground"
+                )}
+              >
+                <CalendarIcon className="mr-2 h-4 w-4" />
+                {dueDate ? format(dueDate, "dd MMM yyyy") : "Pick a date"}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <CalendarComponent
+                captionLayout="dropdown"
+                mode="single"
+                selected={dueDate}
+                onSelect={setDueDate}
+                initialFocus
+              />
+            </PopoverContent>
+          </Popover>
           <Button onClick={handleAddTask} disabled={loading || !title || !dueDate}>
             Add
           </Button>
@@ -88,7 +108,7 @@ export function CustomerTasks({ customerId, initialTasks }: CustomerTasksProps) 
                 {task.title}
               </p>
               <div className="flex items-center text-xs text-muted-foreground mt-1">
-                <Calendar className="h-3 w-3 mr-1" />
+                <CalendarIcon className="h-3 w-3 mr-1" />
                 {format(new Date(task.dueDate), "PP")}
               </div>
             </div>

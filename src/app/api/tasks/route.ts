@@ -29,6 +29,18 @@ export async function POST(req: Request) {
       },
     });
 
+    // Create notification for the agent
+    await prisma.notification.create({
+      data: {
+        userId: session.user.id,
+        type: "SYSTEM",
+        title: "New Task Created",
+        message: `Task "${title}" has been created successfully.`,
+        link: relatedCustomerId ? `/dashboard/customers/${relatedCustomerId}?tab=task` : undefined,
+        entityId: task.id,
+      },
+    });
+
     return NextResponse.json(task);
   } catch (error) {
     console.error("[TASKS_POST]", error);

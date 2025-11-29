@@ -18,6 +18,7 @@ export default function NewBookingPage() {
       await createBookingMutation.mutateAsync({
         customerId: values.customerId,
         tripId: values.tripId,
+        leadId: values.leadId,
         totalAmount: parseFloat(values.totalAmount),
         paidAmount: parseFloat(values.paidAmount || "0"),
         status: values.status,

@@ -550,7 +550,7 @@ export default function AccountPage() {
                       <div className="space-y-2">
                         {commissionData.bookings.map((booking: CommissionBooking) => (
                           <Card key={booking.id}>
-                            <CardContent className="pt-6">
+                            <CardContent>
                               <div className="flex items-center justify-between">
                                 <div className="space-y-1">
                                   <div className="font-medium">{booking.customerName}</div>

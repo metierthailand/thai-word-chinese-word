@@ -21,6 +21,7 @@ export async function GET(request: Request) {
     const source = searchParams.get("source") || "";
     const minPotential = searchParams.get("minPotential") || "";
     const maxPotential = searchParams.get("maxPotential") || "";
+    const customerId = searchParams.get("customerId") || "";
 
     const nameFilter: Prisma.LeadWhereInput =
       search.trim().length > 0
@@ -57,6 +58,10 @@ export async function GET(request: Request) {
             },
           }
         : {};
+
+    const customerFilter: Prisma.LeadWhereInput = customerId
+      ? { customerId }
+      : {};
 
     const validStatuses = [
       "NEW",
@@ -98,7 +103,7 @@ export async function GET(request: Request) {
         : {};
 
     const where: Prisma.LeadWhereInput = {
-      AND: [nameFilter, statusFilter, sourceFilter, potentialFilter],
+      AND: [nameFilter, customerFilter, statusFilter, sourceFilter, potentialFilter],
     };
 
     const total = await prisma.lead.count({ where });

@@ -1,35 +1,33 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import { LeadForm } from "../_components/lead-form";
-
-interface Customer {
-  id: string;
-  firstNameTh: string;
-  lastNameTh: string;
-  firstNameEn: string;
-  lastNameEn: string;
-}
+import { useCreateLead } from "../hooks/use-leads";
+import { useCustomers } from "@/app/dashboard/customers/hooks/use-customers";
+import { useMemo } from "react";
 
 export default function NewLeadPage() {
   const router = useRouter();
-  const [loading, setLoading] = useState(false);
-  const [customers, setCustomers] = useState<Customer[]>([]);
+  const createLeadMutation = useCreateLead();
 
-  useEffect(() => {
-    const fetchCustomers = async () => {
-      const res = await fetch("/api/customers?page=1&pageSize=1000");
-      if (!res.ok) {
-        return;
-      }
-      const data = await res.json();
-      setCustomers(data.data ?? []);
-    };
-    fetchCustomers();
-  }, []);
+  // Fetch customers using TanStack Query
+  const { data: customersResponse, isLoading: isLoadingCustomers } = useCustomers(
+    1,
+    1000 // Fetch a large number of customers for the dropdown
+  );
+
+  const customers = useMemo(() => {
+    if (!customersResponse?.data) return [];
+    return customersResponse.data.map((customer) => ({
+      id: customer.id,
+      firstNameTh: customer.firstNameTh,
+      lastNameTh: customer.lastNameTh,
+      firstNameEn: customer.firstNameEn,
+      lastNameEn: customer.lastNameEn,
+    }));
+  }, [customersResponse]);
 
   async function handleSubmit(values: {
     customerId: string;
@@ -40,38 +38,25 @@ export default function NewLeadPage() {
     travelDateEstimate?: string;
     notes?: string;
   }) {
-    setLoading(true);
+    const payload = {
+      customerId: values.customerId,
+      source: values.source,
+      status: values.status,
+      destinationInterest: values.destinationInterest || undefined,
+      potentialValue: values.potentialValue
+        ? Number(values.potentialValue)
+        : undefined,
+      travelDateEstimate: values.travelDateEstimate || undefined,
+      notes: values.notes || undefined,
+    };
+
     try {
-      const payload = {
-        customerId: values.customerId,
-        source: values.source,
-        status: values.status,
-        destinationInterest: values.destinationInterest || undefined,
-        potentialValue: values.potentialValue
-          ? Number(values.potentialValue)
-          : undefined,
-        travelDateEstimate: values.travelDateEstimate || undefined,
-        notes: values.notes || undefined,
-      };
-
-      const res = await fetch("/api/leads", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
-      });
-
-      if (!res.ok) {
-        throw new Error("Failed to create lead");
-      }
-
+      await createLeadMutation.mutateAsync(payload);
       router.push("/dashboard/leads");
       router.refresh();
     } catch (error) {
+      // Error is already handled by the mutation hook (toast notification)
       console.error(error);
-    } finally {
-      setLoading(false);
     }
   }
 
@@ -90,7 +75,7 @@ export default function NewLeadPage() {
           customers={customers}
           onSubmit={handleSubmit}
           onCancel={() => router.back()}
-          isLoading={loading}
+          isLoading={createLeadMutation.isPending || isLoadingCustomers}
         />
       </div>
     </div>
