@@ -307,12 +307,15 @@ export function PassportManager({ customerId, passports }: PassportManagerProps)
                         </PopoverTrigger>
                         <PopoverContent className="w-auto p-0" align="start">
                           <Calendar
+                            captionLayout="dropdown"
                             mode="single"
                             selected={field.value}
                             onSelect={field.onChange}
                             disabled={(date) =>
                               date < new Date("1900-01-01")
                             }
+                            fromYear={2000}
+                            toYear={2100}
                             initialFocus
                           />
                         </PopoverContent>

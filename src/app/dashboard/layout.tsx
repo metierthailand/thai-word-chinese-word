@@ -24,6 +24,7 @@ import {
 
 import { AccountSwitcher } from "./_components/sidebar/account-switcher";
 import { SearchDialog } from "./_components/sidebar/search-dialog";
+import { NotificationBell } from "@/components/ui/notification-bell";
 import { ThemeSwitcher } from "./_components/sidebar/theme-switcher";
 import { AppSidebar } from "./_components/sidebar/app-sidebar";
 
@@ -102,6 +103,7 @@ export default async function Layout({ children }: Readonly<{ children: ReactNod
               <SearchDialog />
             </div>
             <div className="flex items-center gap-2">
+              <NotificationBell />
               <ThemeSwitcher />
               {users.length > 0 && <AccountSwitcher users={users} />}
             </div>

@@ -28,6 +28,7 @@ model User {
   leads          Lead[]
   tasks          Task[]
   interactions   Interaction[]
+  notifications  Notification[]
 
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
@@ -243,4 +244,29 @@ model Task {
 
   createdAt         DateTime     @default(now())
   updatedAt         DateTime     @updatedAt
+}
+
+// 6. Notifications
+enum NotificationType {
+  PASSPORT_EXPIRY
+  TRIP_UPCOMING
+  SYSTEM
+}
+
+model Notification {
+  id          String           @id @default(uuid())
+  userId      String           // Agent who receives the alert
+  user        User             @relation(fields: [userId], references: [id])
+  
+  type        NotificationType
+  title       String
+  message     String
+  link        String?          // URL to redirect to (e.g., customer page)
+  isRead      Boolean          @default(false)
+  
+  // Metadata to prevent duplicate alerts
+  entityId    String?          // ID of the related entity (Passport ID, Trip ID)
+  
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
 }

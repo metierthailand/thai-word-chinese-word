@@ -236,7 +236,7 @@ export function CustomerForm({ mode, initialData, onSubmit, onCancel, isLoading 
             <FormItem>
               <FormLabel>Phone</FormLabel>
               <FormControl>
-                <Input placeholder="+66 81 234 5678" {...field} />
+                <Input placeholder="0912345678" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
