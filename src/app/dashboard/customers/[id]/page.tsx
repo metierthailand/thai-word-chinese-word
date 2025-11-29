@@ -16,21 +16,21 @@ export default async function CustomerDetailPage({ params }: { params: Promise<{
 
   const customer = await prisma.customer.findUnique({
     where: { id },
-      include: {
-        tags: { include: { tag: true } },
-        passports: {
-          orderBy: { updatedAt: "desc" },
-        },
-        leads: {
-          orderBy: { updatedAt: "desc" },
-        },
-        bookings: {
-          orderBy: { createdAt: "desc" },
-          include: {
-            trip: true,
-          },
+    include: {
+      tags: { include: { tag: true } },
+      passports: {
+        orderBy: { updatedAt: "desc" },
+      },
+      leads: {
+        orderBy: { updatedAt: "desc" },
+      },
+      bookings: {
+        orderBy: { createdAt: "desc" },
+        include: {
+          trip: true,
         },
       },
+    },
   });
 
   if (!customer) {
@@ -175,15 +175,17 @@ export default async function CustomerDetailPage({ params }: { params: Promise<{
                   <p className="text-muted-foreground">No bookings found.</p>
                 ) : (
                   customer.bookings.map((booking) => (
-                    <div key={booking.id} className="rounded-md border p-4">
-                      <div className="font-medium">{booking.trip.name}</div>
-                      <div className="text-muted-foreground text-sm">
-                        {format(booking.trip.startDate, "PP")} - {format(booking.trip.endDate, "PP")}
+                    <Link key={booking.id} href={`/dashboard/bookings/${booking.id}/edit`}>
+                      <div className="rounded-md border p-4">
+                        <div className="font-medium">{booking.trip.name}</div>
+                        <div className="text-muted-foreground text-sm">
+                          {format(booking.trip.startDate, "PP")} - {format(booking.trip.endDate, "PP")}
+                        </div>
+                        <div className="text-muted-foreground mt-1 text-xs">
+                          Status: {booking.status} | Amount: {booking.totalAmount.toString()}
+                        </div>
                       </div>
-                      <div className="text-muted-foreground mt-1 text-xs">
-                        Status: {booking.status} | Amount: {booking.totalAmount.toString()}
-                      </div>
-                    </div>
+                    </Link>
                   ))
                 )}
               </div>

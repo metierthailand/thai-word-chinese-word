@@ -1,0 +1,216 @@
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
+
+export interface Booking {
+  id: string;
+  customerId: string;
+  tripId: string;
+  customer: {
+    firstNameTh: string;
+    lastNameTh: string;
+    firstNameEn: string;
+    lastNameEn: string;
+    email: string;
+  };
+  trip: {
+    name: string;
+    destination: string;
+    startDate: string;
+    endDate: string;
+  };
+  status: string;
+  visaStatus: string;
+  totalAmount: number;
+  paidAmount: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface BookingsResponse {
+  data: Booking[];
+  total: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+}
+
+// Query key factory
+export const bookingKeys = {
+  all: ["bookings"] as const,
+  lists: () => [...bookingKeys.all, "list"] as const,
+  list: (page: number, pageSize: number) => [...bookingKeys.lists(), page, pageSize] as const,
+  details: () => [...bookingKeys.all, "detail"] as const,
+  detail: (id: string) => [...bookingKeys.details(), id] as const,
+};
+
+// Fetch bookings function
+async function fetchBookings(page: number = 1, pageSize: number = 10): Promise<BookingsResponse> {
+  const res = await fetch(`/api/bookings?page=${page}&pageSize=${pageSize}`);
+  if (!res.ok) {
+    throw new Error("Failed to fetch bookings");
+  }
+  const data = await res.json();
+  // Convert Decimal fields to numbers
+  return {
+    ...data,
+    data: data.data.map((booking: Booking & { totalAmount: string | number; paidAmount: string | number }) => ({
+      ...booking,
+      totalAmount: Number(booking.totalAmount),
+      paidAmount: Number(booking.paidAmount),
+    })),
+  };
+}
+
+// Fetch single booking function
+async function fetchBooking(id: string): Promise<Booking> {
+  const res = await fetch(`/api/bookings/${id}`);
+  if (!res.ok) {
+    throw new Error("Failed to fetch booking");
+  }
+  const data = await res.json();
+  // Convert Decimal fields to numbers
+  return {
+    ...data,
+    totalAmount: Number(data.totalAmount),
+    paidAmount: Number(data.paidAmount),
+  };
+}
+
+// Create booking function
+async function createBooking(data: {
+  customerId: string;
+  tripId: string;
+  totalAmount: number;
+  paidAmount?: number;
+  status?: string;
+  visaStatus?: string;
+}): Promise<Booking> {
+  const res = await fetch("/api/bookings", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(data),
+  });
+
+  if (!res.ok) {
+    const error = await res.json();
+    throw new Error(error.error || "Failed to create booking");
+  }
+
+  return res.json();
+}
+
+// Update booking function
+async function updateBooking({
+  id,
+  data,
+}: {
+  id: string;
+  data: {
+    customerId?: string;
+    tripId?: string;
+    totalAmount?: number;
+    paidAmount?: number;
+    status?: string;
+    visaStatus?: string;
+  };
+}): Promise<Booking> {
+  const res = await fetch(`/api/bookings/${id}`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(data),
+  });
+
+  if (!res.ok) {
+    const error = await res.json();
+    throw new Error(error.error || "Failed to update booking");
+  }
+
+  return res.json();
+}
+
+// Delete booking function
+async function deleteBooking(id: string): Promise<void> {
+  const res = await fetch(`/api/bookings/${id}`, {
+    method: "DELETE",
+  });
+  if (!res.ok) {
+    throw new Error("Failed to delete booking");
+  }
+}
+
+// Hook to fetch bookings with pagination
+export function useBookings(page: number, pageSize: number) {
+  return useQuery({
+    queryKey: bookingKeys.list(page, pageSize),
+    queryFn: () => fetchBookings(page, pageSize),
+    staleTime: 30 * 1000, // 30 seconds
+  });
+}
+
+// Hook to fetch a single booking
+export function useBooking(id: string | undefined) {
+  return useQuery({
+    queryKey: bookingKeys.detail(id!),
+    queryFn: () => fetchBooking(id!),
+    enabled: !!id, // Only fetch if id is provided
+    staleTime: 30 * 1000, // 30 seconds
+  });
+}
+
+// Hook to create a booking
+export function useCreateBooking() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: createBooking,
+    onSuccess: () => {
+      // Invalidate all booking queries to refetch
+      queryClient.invalidateQueries({ queryKey: bookingKeys.all });
+      toast.success("Booking created successfully");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Failed to create booking");
+    },
+  });
+}
+
+// Hook to update a booking
+export function useUpdateBooking() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: updateBooking,
+    onSuccess: (data, variables) => {
+      // Invalidate all booking queries to refetch
+      queryClient.invalidateQueries({ queryKey: bookingKeys.all });
+      // Update the specific booking in cache
+      queryClient.setQueryData(bookingKeys.detail(variables.id), data);
+      toast.success("Booking updated successfully");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Failed to update booking");
+    },
+  });
+}
+
+// Hook to delete a booking
+export function useDeleteBooking() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: deleteBooking,
+    onSuccess: () => {
+      // Invalidate all booking queries to refetch
+      queryClient.invalidateQueries({ queryKey: bookingKeys.all });
+      toast.success("Booking deleted successfully");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Failed to delete booking");
+    },
+  });
+}
+
