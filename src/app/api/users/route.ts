@@ -3,6 +3,8 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
+import crypto from "crypto";
+import { sendResetPasswordEmail } from "@/lib/email";
 
 export async function GET() {
   const session = await getServerSession(authOptions);
@@ -78,7 +80,7 @@ export async function POST(req: Request) {
     const body = await req.json();
     const { name, email, password, role, commissionRate } = body;
 
-    if (!name || !email || !password || !role) {
+    if (!name || !email || !role) {
       return new NextResponse("Missing required fields", { status: 400 });
     }
 
@@ -92,23 +94,45 @@ export async function POST(req: Request) {
       return new NextResponse("User already exists", { status: 409 });
     }
 
-    const hashedPassword = await bcrypt.hash(password, 10);
+    // Generate reset token
+    const resetToken = crypto.randomBytes(32).toString("hex");
+    const resetTokenExpiry = new Date();
+    resetTokenExpiry.setHours(resetTokenExpiry.getHours() + 24); // Token expires in 24 hours
 
+    // Create user without password (password is optional in schema)
     const user = await prisma.user.create({
       data: {
         name,
         email,
-        password: hashedPassword,
+        // password is omitted - user will set it via reset password link
         role,
         commissionRate: commissionRate ? parseFloat(commissionRate) : null,
         isActive: true,
+        resetToken,
+        resetTokenExpiry,
       },
     });
 
+    // Send reset password email
+    let resetUrl: string | undefined;
+    try {
+      resetUrl = await sendResetPasswordEmail(user.email, user.name, resetToken);
+    } catch (emailError) {
+      console.error("Failed to send reset password email:", emailError);
+      // Don't fail user creation if email fails
+    }
+
     // Remove password from response
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { password: _, ...userWithoutPassword } = user;
 
-    return NextResponse.json(userWithoutPassword);
+    // In development mode, include reset URL in response for testing
+    const response = { ...userWithoutPassword } as typeof userWithoutPassword & { resetPasswordUrl?: string };
+    if (process.env.NODE_ENV === "development" && resetUrl) {
+      response.resetPasswordUrl = resetUrl;
+    }
+
+    return NextResponse.json(response);
   } catch (error) {
     console.error("[USERS_POST]", error);
     return new NextResponse("Internal Error", { status: 500 });

@@ -32,6 +32,11 @@ export const authOptions: NextAuthOptions = {
           return null;
         }
 
+        // Check if user has set a password
+        if (!user.password) {
+          return null; // User hasn't set password yet, must use reset password link
+        }
+
         const isPasswordValid = await bcrypt.compare(
           credentials.password,
           user.password
@@ -74,16 +79,16 @@ export const authOptions: NextAuthOptions = {
         token.role = (user as any).role;
       }
       
-      // Verify user is still active on each request
+      // Verify user is still active and has password on each request
       if (token.id) {
         try {
           const dbUser = await prisma.user.findUnique({
             where: { id: token.id as string },
-            select: { isActive: true },
+            select: { isActive: true, password: true },
           });
           
-          // If user is deactivated, mark token as invalid
-          if (!dbUser || !dbUser.isActive) {
+          // If user is deactivated or doesn't have password, mark token as invalid
+          if (!dbUser || !dbUser.isActive || !dbUser.password) {
             // Return a special flag instead of null to avoid JWT error
             token.isActive = false;
             return token;

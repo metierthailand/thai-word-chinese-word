@@ -16,21 +16,23 @@ enum Role {
 }
 
 model User {
-  id             String   @id @default(uuid())
-  email          String   @unique
-  password       String
-  name           String
-  role           Role     @default(ADMIN)
-  commissionRate Decimal? @db.Decimal(5, 2) // Percentage, e.g., 5.00
-  isActive       Boolean  @default(true)
-  
-  leads          Lead[]
-  tasks          Task[]
-  interactions   Interaction[]
-  notifications  Notification[]
+  id               String    @id @default(uuid())
+  email            String    @unique
+  password         String?
+  name             String
+  role             Role      @default(ADMIN)
+  commissionRate   Decimal?  @db.Decimal(5, 2) // Percentage, e.g., 5.00
+  isActive         Boolean   @default(true)
+  resetToken       String?   @unique
+  resetTokenExpiry DateTime?
 
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  leads         Lead[]
+  tasks         Task[]
+  interactions  Interaction[]
+  notifications Notification[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 // 2. Customer Management
@@ -54,23 +56,23 @@ model Customer {
   lastNameTh  String
   firstNameEn String
   lastNameEn  String
-  
+
   nickname    String?
   email       String?
   phone       String?
   lineId      String?
   nationality String?
   dateOfBirth DateTime?
-  preferences String?      @db.Text // Dietary, Seat, etc.
-  
-  tags        CustomerTag[]
-  passports   Passport[]
+  preferences String?   @db.Text // Dietary, Seat, etc.
+
+  tags         CustomerTag[]
+  passports    Passport[]
   interactions Interaction[]
-  leads       Lead[]
-  bookings    Booking[]
-  
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
+  leads        Lead[]
+  bookings     Booking[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Passport {
@@ -82,8 +84,8 @@ model Passport {
   expiryDate     DateTime
   isPrimary      Boolean  @default(false)
 
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Tag {
@@ -121,23 +123,23 @@ enum LeadStatus {
 }
 
 model Lead {
-  id                 String     @id @default(uuid())
-  customerId         String
-  customer           Customer   @relation(fields: [customerId], references: [id], onDelete: Cascade)
-  agentId            String
-  agent              User       @relation(fields: [agentId], references: [id])
-  
-  source             LeadSource @default(WEBSITE)
-  status             LeadStatus @default(NEW)
-  potentialValue     Decimal?   @db.Decimal(10, 2)
-  destinationInterest String?
-  travelDateEstimate DateTime?
-  notes              String?    @db.Text
-  
-  bookings           Booking[]
+  id         String   @id @default(uuid())
+  customerId String
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  agentId    String
+  agent      User     @relation(fields: [agentId], references: [id])
 
-  createdAt          DateTime   @default(now())
-  updatedAt          DateTime   @updatedAt
+  source              LeadSource @default(WEBSITE)
+  status              LeadStatus @default(NEW)
+  potentialValue      Decimal?   @db.Decimal(10, 2)
+  destinationInterest String?
+  travelDateEstimate  DateTime?
+  notes               String?    @db.Text
+
+  bookings Booking[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 // 4. Trip & Booking Management
@@ -157,41 +159,41 @@ enum VisaStatus {
 }
 
 model Trip {
-  id          String    @id @default(uuid())
+  id          String   @id @default(uuid())
   name        String
   destination String
   startDate   DateTime
   endDate     DateTime
   maxCapacity Int
-  description String?   @db.Text
-  price       Decimal?  @db.Decimal(10, 2)
-  
-  bookings    Booking[]
+  description String?  @db.Text
+  price       Decimal? @db.Decimal(10, 2)
 
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  bookings Booking[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Booking {
-  id             String        @id @default(uuid())
-  customerId     String
-  customer       Customer      @relation(fields: [customerId], references: [id])
-  leadId         String?
-  lead           Lead?         @relation(fields: [leadId], references: [id])
-  
-  tripId         String
-  trip           Trip          @relation(fields: [tripId], references: [id])
-  status         BookingStatus @default(PENDING)
-  
-  totalAmount    Decimal       @db.Decimal(10, 2)
-  paidAmount     Decimal       @db.Decimal(10, 2) @default(0)
-  paymentDueDate DateTime?
-  visaStatus     VisaStatus    @default(NOT_REQUIRED)
-  
-  tasks          Task[]
+  id         String   @id @default(uuid())
+  customerId String
+  customer   Customer @relation(fields: [customerId], references: [id])
+  leadId     String?
+  lead       Lead?    @relation(fields: [leadId], references: [id])
 
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
+  tripId String
+  trip   Trip          @relation(fields: [tripId], references: [id])
+  status BookingStatus @default(PENDING)
+
+  totalAmount    Decimal    @db.Decimal(10, 2)
+  paidAmount     Decimal    @default(0) @db.Decimal(10, 2)
+  paymentDueDate DateTime?
+  visaStatus     VisaStatus @default(NOT_REQUIRED)
+
+  tasks Task[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 // 5. Relationship & Tasks
@@ -205,15 +207,15 @@ enum InteractionType {
 }
 
 model Interaction {
-  id         String          @id @default(uuid())
+  id         String   @id @default(uuid())
   customerId String
-  customer   Customer        @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
   agentId    String
-  agent      User            @relation(fields: [agentId], references: [id])
-  
-  type       InteractionType
-  content    String          @db.Text
-  date       DateTime        @default(now())
+  agent      User     @relation(fields: [agentId], references: [id])
+
+  type    InteractionType
+  content String          @db.Text
+  date    DateTime        @default(now())
 }
 
 enum TaskPriority {
@@ -223,26 +225,26 @@ enum TaskPriority {
 }
 
 model Task {
-  id                String       @id @default(uuid())
-  agentId           String
-  agent             User         @relation(fields: [agentId], references: [id])
-  
+  id      String @id @default(uuid())
+  agentId String
+  agent   User   @relation(fields: [agentId], references: [id])
+
   relatedCustomerId String? // Optional loose link or strict? Let's keep it strict if possible, but maybe generic?
   // For simplicity in Prisma, let's not force a relation unless needed. 
   // But requirement said "Create follow-up tasks for each customer".
   // Let's link to Booking optionally too.
-  
-  relatedBookingId  String?
-  relatedBooking    Booking?     @relation(fields: [relatedBookingId], references: [id])
-  
-  title             String
-  description       String?      @db.Text
-  dueDate           DateTime
-  isCompleted       Boolean      @default(false)
-  priority          TaskPriority @default(MEDIUM)
 
-  createdAt         DateTime     @default(now())
-  updatedAt         DateTime     @updatedAt
+  relatedBookingId String?
+  relatedBooking   Booking? @relation(fields: [relatedBookingId], references: [id])
+
+  title       String
+  description String?      @db.Text
+  dueDate     DateTime
+  isCompleted Boolean      @default(false)
+  priority    TaskPriority @default(MEDIUM)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 // 6. Notifications
@@ -253,19 +255,19 @@ enum NotificationType {
 }
 
 model Notification {
-  id          String           @id @default(uuid())
-  userId      String           // Agent who receives the alert
-  user        User             @relation(fields: [userId], references: [id])
-  
-  type        NotificationType
-  title       String
-  message     String
-  link        String?          // URL to redirect to (e.g., customer page)
-  isRead      Boolean          @default(false)
-  
+  id     String @id @default(uuid())
+  userId String // Agent who receives the alert
+  user   User   @relation(fields: [userId], references: [id])
+
+  type    NotificationType
+  title   String
+  message String
+  link    String? // URL to redirect to (e.g., customer page)
+  isRead  Boolean          @default(false)
+
   // Metadata to prevent duplicate alerts
-  entityId    String?          // ID of the related entity (Passport ID, Trip ID)
-  
-  createdAt   DateTime         @default(now())
-  updatedAt   DateTime         @updatedAt
+  entityId String? // ID of the related entity (Passport ID, Trip ID)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }

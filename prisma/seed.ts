@@ -16,13 +16,17 @@ async function main() {
 
   const superAdmin = await prisma.user.upsert({
     where: { email: superAdminEmail },
-    update: {},
+    update: {
+      // Update password if it doesn't exist
+      password: password,
+    },
     create: {
       email: superAdminEmail,
-      password,
+      password: password,
       name: 'Super Admin',
       role: Role.SUPER_ADMIN,
       commissionRate: 0,
+      isActive: true,
     },
   });
 
@@ -30,13 +34,17 @@ async function main() {
 
   const admin = await prisma.user.upsert({
     where: { email: adminEmail },
-    update: {},
+    update: {
+      // Update password if it doesn't exist
+      password: password,
+    },
     create: {
       email: adminEmail,
-      password,
+      password: password,
       name: 'Admin',
       role: Role.ADMIN,
       commissionRate: 0,
+      isActive: true,
     },
   });
 

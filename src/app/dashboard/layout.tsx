@@ -70,6 +70,7 @@ export default async function Layout({ children }: Readonly<{ children: ReactNod
   ]);
 
   // Check if user is active - if not, clear cookies and redirect to login
+  // Note: Password check is handled in auth.ts JWT callback
   if (!currentUser || !currentUser.isActive) {
     // Clear all NextAuth cookies (both HTTP and HTTPS variants)
     const allCookies = cookieStore.getAll();

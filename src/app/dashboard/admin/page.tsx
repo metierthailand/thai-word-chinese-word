@@ -5,9 +5,8 @@ import { useSession } from "next-auth/react";
 import { UsersTable } from "./users-table";
 import { UserDialog } from "./user-dialog";
 import { Button } from "@/components/ui/button";
-import { Plus, Lock } from "lucide-react";
+import { Plus } from "lucide-react";
 import { User } from "./types";
-import Link from "next/link";
 import { AccessDenied } from "@/components/page/access-denied";
 import { Loading } from "@/components/page/loading";
 

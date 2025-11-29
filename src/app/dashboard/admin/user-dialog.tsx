@@ -24,7 +24,6 @@ export function UserDialog({ open, onOpenChange, user, onSaved }: UserDialogProp
   const [formData, setFormData] = useState({
     name: "",
     email: "",
-    password: "",
     role: "ADMIN",
     commissionRate: "",
     isActive: true,
@@ -35,7 +34,6 @@ export function UserDialog({ open, onOpenChange, user, onSaved }: UserDialogProp
       setFormData({
         name: user.name,
         email: user.email,
-        password: "", // Don't populate password
         role: user.role,
         commissionRate: user.commissionRate ? user.commissionRate.toString() : "",
         isActive: user.isActive,
@@ -44,7 +42,6 @@ export function UserDialog({ open, onOpenChange, user, onSaved }: UserDialogProp
       setFormData({
         name: "",
         email: "",
-        password: "",
         role: "ADMIN",
         commissionRate: "",
         isActive: true,
@@ -116,16 +113,6 @@ export function UserDialog({ open, onOpenChange, user, onSaved }: UserDialogProp
               value={formData.email}
               onChange={(e) => setFormData({ ...formData, email: e.target.value })}
               required
-            />
-          </div>
-          <div className="grid gap-2">
-            <Label htmlFor="password">{user ? "Password (leave blank to keep)" : "Password"}</Label>
-            <Input
-              id="password"
-              type="password"
-              value={formData.password}
-              onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-              required={!user}
             />
           </div>
           <div className="grid gap-2">
