@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 
-export async function GET() {
+export async function GET(request: Request) {
   const session = await getServerSession(authOptions);
 
   if (!session) {
@@ -11,7 +11,16 @@ export async function GET() {
   }
 
   try {
+    const { searchParams } = new URL(request.url);
+    const page = parseInt(searchParams.get("page") || "1", 10);
+    const pageSize = parseInt(searchParams.get("pageSize") || "10", 10);
+    const skip = (page - 1) * pageSize;
+
+    const total = await prisma.lead.count();
+
     const leads = await prisma.lead.findMany({
+      skip,
+      take: pageSize,
       orderBy: {
         updatedAt: "desc",
       },
@@ -26,7 +35,13 @@ export async function GET() {
       },
     });
 
-    return NextResponse.json(leads);
+    return NextResponse.json({
+      data: leads,
+      total,
+      page,
+      pageSize,
+      totalPages: Math.ceil(total / pageSize),
+    });
   } catch (error) {
     console.error("[LEADS_GET]", error);
     return new NextResponse("Internal Error", { status: 500 });

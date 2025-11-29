@@ -2,43 +2,16 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
 import { Button } from "@/components/ui/button";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
 import { ArrowLeft } from "lucide-react";
-
-const formSchema = z.object({
-  customerId: z.string().min(1, { message: "Customer is required" }),
-  source: z.string().min(1, { message: "Source is required" }),
-  status: z.string().min(1, { message: "Status is required" }),
-  destinationInterest: z.string().optional(),
-  potentialValue: z.string().optional(), // Input as string, convert to number on submit
-  travelDateEstimate: z.string().optional(),
-  notes: z.string().optional(),
-});
+import { LeadForm } from "../_components/lead-form";
 
 interface Customer {
   id: string;
-  firstName: string;
-  lastName: string;
+  firstNameTh: string;
+  lastNameTh: string;
+  firstNameEn: string;
+  lastNameEn: string;
 }
 
 export default function NewLeadPage() {
@@ -48,37 +21,45 @@ export default function NewLeadPage() {
 
   useEffect(() => {
     const fetchCustomers = async () => {
-      const res = await fetch("/api/customers");
-      if (res.ok) {
-        const data = await res.json();
-        setCustomers(data);
+      const res = await fetch("/api/customers?page=1&pageSize=1000");
+      if (!res.ok) {
+        return;
       }
+      const data = await res.json();
+      setCustomers(data.data ?? []);
     };
     fetchCustomers();
   }, []);
 
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      customerId: "",
-      source: "WEBSITE",
-      status: "NEW",
-      destinationInterest: "",
-      potentialValue: "",
-      travelDateEstimate: "",
-      notes: "",
-    },
-  });
-
-  async function onSubmit(values: z.infer<typeof formSchema>) {
+  async function handleSubmit(values: {
+    customerId: string;
+    source: string;
+    status: string;
+    destinationInterest?: string;
+    potentialValue?: string;
+    travelDateEstimate?: string;
+    notes?: string;
+  }) {
     setLoading(true);
     try {
+      const payload = {
+        customerId: values.customerId,
+        source: values.source,
+        status: values.status,
+        destinationInterest: values.destinationInterest || undefined,
+        potentialValue: values.potentialValue
+          ? Number(values.potentialValue)
+          : undefined,
+        travelDateEstimate: values.travelDateEstimate || undefined,
+        notes: values.notes || undefined,
+      };
+
       const res = await fetch("/api/leads", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(values),
+        body: JSON.stringify(payload),
       });
 
       if (!res.ok) {
@@ -104,171 +85,13 @@ export default function NewLeadPage() {
       </div>
 
       <div className="rounded-md border p-6 bg-card">
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            <FormField
-              control={form.control}
-              name="customerId"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Customer</FormLabel>
-                  <Select
-                    onValueChange={field.onChange}
-                    defaultValue={field.value}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a customer" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {customers.map((customer) => (
-                        <SelectItem key={customer.id} value={customer.id}>
-                          {customer.firstName} {customer.lastName}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="source"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Source</FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      defaultValue={field.value}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select source" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="WEBSITE">Website</SelectItem>
-                        <SelectItem value="WALKIN">Walk-in</SelectItem>
-                        <SelectItem value="REFERRAL">Referral</SelectItem>
-                        <SelectItem value="SOCIAL">Social Media</SelectItem>
-                        <SelectItem value="LINE">LINE</SelectItem>
-                        <SelectItem value="OTHER">Other</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="status"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Status</FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      defaultValue={field.value}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select status" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="NEW">New</SelectItem>
-                        <SelectItem value="QUOTED">Quoted</SelectItem>
-                        <SelectItem value="FOLLOW_UP">Follow Up</SelectItem>
-                        <SelectItem value="CLOSED_WON">Closed Won</SelectItem>
-                        <SelectItem value="CLOSED_LOST">Closed Lost</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-
-            <FormField
-              control={form.control}
-              name="destinationInterest"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Destination Interest</FormLabel>
-                  <FormControl>
-                    <Input placeholder="e.g. Japan, Europe" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="potentialValue"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Potential Value (THB)</FormLabel>
-                    <FormControl>
-                      <Input type="number" placeholder="0.00" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="travelDateEstimate"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Estimated Travel Date</FormLabel>
-                    <FormControl>
-                      <Input type="date" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-
-            <FormField
-              control={form.control}
-              name="notes"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Notes</FormLabel>
-                  <FormControl>
-                    <Textarea
-                      placeholder="Any additional details..."
-                      className="resize-none"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <div className="flex justify-end space-x-4">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => router.back()}
-              >
-                Cancel
-              </Button>
-              <Button type="submit" disabled={loading}>
-                {loading ? "Creating..." : "Create Lead"}
-              </Button>
-            </div>
-          </form>
-        </Form>
+        <LeadForm
+          mode="create"
+          customers={customers}
+          onSubmit={handleSubmit}
+          onCancel={() => router.back()}
+          isLoading={loading}
+        />
       </div>
     </div>
   );

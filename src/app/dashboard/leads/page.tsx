@@ -1,56 +1,50 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { ColumnDef } from "@tanstack/react-table";
 import { Button } from "@/components/ui/button";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Plus } from "lucide-react";
+import { Plus, Eye, Pencil } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { format } from "date-fns";
-
-interface Lead {
-  id: string;
-  customer: {
-    firstName: string;
-    lastName: string;
-    email: string;
-  };
-  status: string;
-  source: string;
-  destinationInterest: string | null;
-  potentialValue: number | null;
-  updatedAt: string;
-}
+import { DataTable } from "@/components/data-table/data-table";
+import { useDataTableInstance } from "@/hooks/use-data-table-instance";
+import { DataTablePagination } from "@/components/data-table/data-table-pagination";
+import { useLeads, type Lead } from "./hooks/use-leads";
 
 export default function LeadsPage() {
-  const [leads, setLeads] = useState<Lead[]>([]);
-  const [loading, setLoading] = useState(true);
   const router = useRouter();
+  const searchParams = useSearchParams();
 
-  useEffect(() => {
-    const fetchLeads = async () => {
-      try {
-        const res = await fetch("/api/leads");
-        if (!res.ok) throw new Error("Failed to fetch leads");
-        const data = await res.json();
-        setLeads(data);
-      } catch (error) {
-        console.error(error);
-      } finally {
-        setLoading(false);
+  const page = parseInt(searchParams.get("page") || "1", 10);
+  const pageSize = parseInt(searchParams.get("pageSize") || "10", 10);
+
+  const updateSearchParams = useCallback(
+    (updates: { page?: number; pageSize?: number }) => {
+      const params = new URLSearchParams(searchParams.toString());
+
+      if (updates.page !== undefined) {
+        if (updates.page === 1) {
+          params.delete("page");
+        } else {
+          params.set("page", updates.page.toString());
+        }
       }
-    };
 
-    fetchLeads();
-  }, []);
+      if (updates.pageSize !== undefined) {
+        if (updates.pageSize === 10) {
+          params.delete("pageSize");
+        } else {
+          params.set("pageSize", updates.pageSize.toString());
+        }
+      }
+
+      const newUrl = params.toString() ? `?${params.toString()}` : "";
+      router.push(`/dashboard/leads${newUrl}`, { scroll: false });
+    },
+    [searchParams, router]
+  );
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -69,8 +63,165 @@ export default function LeadsPage() {
     }
   };
 
+  const columns: ColumnDef<Lead>[] = useMemo(
+    () => [
+      {
+        accessorKey: "customer",
+        header: "Customer",
+        cell: ({ row }) => {
+          const customer = row.original.customer;
+          return (
+            <div className="flex flex-col">
+              <span className="font-medium">
+                {customer.firstNameTh} {customer.lastNameTh}
+              </span>
+              <span className="text-xs text-muted-foreground">
+                ({customer.firstNameEn} {customer.lastNameEn})
+              </span>
+              <span className="text-xs text-muted-foreground">
+                {customer.email || "-"}
+              </span>
+            </div>
+          );
+        },
+      },
+      {
+        accessorKey: "status",
+        header: "Status",
+        cell: ({ row }) => (
+          <Badge className={getStatusColor(row.original.status)}>
+            {row.original.status.replace("_", " ")}
+          </Badge>
+        ),
+      },
+      {
+        accessorKey: "destinationInterest",
+        header: "Destination",
+        cell: ({ row }) => row.original.destinationInterest || "-",
+      },
+      {
+        accessorKey: "potentialValue",
+        header: "Value",
+        cell: ({ row }) =>
+          row.original.potentialValue
+            ? new Intl.NumberFormat("th-TH", {
+                style: "currency",
+                currency: "THB",
+              }).format(row.original.potentialValue)
+            : "-",
+      },
+      {
+        accessorKey: "source",
+        header: "Source",
+        cell: ({ row }) => row.original.source,
+      },
+      {
+        accessorKey: "updatedAt",
+        header: "Last Updated",
+        cell: ({ row }) =>
+          format(new Date(row.original.updatedAt), "dd MMM yyyy"),
+      },
+      {
+        id: "actions",
+        header: () => <div className="text-right">Actions</div>,
+        cell: ({ row }) => (
+          <div className="flex justify-end gap-2">
+            <Link href={`/dashboard/leads/${row.original.id}`}>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <Eye className="h-4 w-4" />
+              </Button>
+            </Link>
+            <Link href={`/dashboard/leads/${row.original.id}/edit`}>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <Pencil className="h-4 w-4" />
+              </Button>
+            </Link>
+          </div>
+        ),
+      },
+    ],
+    []
+  );
+
+  const { data: leadsResponse, isLoading, error } = useLeads(page, pageSize);
+
+  const leads = useMemo(
+    () => leadsResponse?.data ?? [],
+    [leadsResponse?.data]
+  );
+  const total = leadsResponse?.total ?? 0;
+
+  const pageCount = useMemo(() => {
+    if (total > 0 && pageSize > 0) {
+      return Math.ceil(total / pageSize);
+    }
+    return 0;
+  }, [total, pageSize]);
+
+  const table = useDataTableInstance({
+    data: leads,
+    columns,
+    enableRowSelection: false,
+    defaultPageSize: pageSize,
+    defaultPageIndex: page - 1,
+    getRowId: (row) => row.id,
+  });
+
+  useEffect(() => {
+    table.setOptions((prev) => ({
+      ...prev,
+      manualPagination: true,
+      pageCount,
+      data: leads,
+    }));
+  }, [pageCount, leads, table]);
+
+  const handlePageChange = useCallback(
+    (newPageIndex: number) => {
+      updateSearchParams({ page: newPageIndex + 1 });
+    },
+    [updateSearchParams]
+  );
+
+  const handlePageSizeChange = useCallback(
+    (newPageSize: number) => {
+      updateSearchParams({ pageSize: newPageSize, page: 1 });
+    },
+    [updateSearchParams]
+  );
+
+  if (isLoading) {
+    return (
+      <div className="space-y-8 p-8">
+        <div className="flex h-64 items-center justify-center">
+          <p className="text-muted-foreground">Loading leads...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="space-y-8 p-8">
+        <div className="flex h-64 items-center justify-center">
+          <p className="text-destructive">
+            Failed to load leads. Please try again.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="p-8 space-y-8">
+    <div className="flex flex-col gap-8 p-8">
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-3xl font-bold tracking-tight">Sales Pipeline</h2>
@@ -78,77 +229,30 @@ export default function LeadsPage() {
             Track and manage your sales leads.
           </p>
         </div>
-        <Link href="/dashboard/leads/new">
+        <Link href="/dashboard/leads/create">
           <Button>
             <Plus className="mr-2 h-4 w-4" /> New Lead
           </Button>
         </Link>
       </div>
 
-      <div className="rounded-md border">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Customer</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Destination</TableHead>
-              <TableHead>Value</TableHead>
-              <TableHead>Source</TableHead>
-              <TableHead>Last Updated</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {loading ? (
-              <TableRow>
-                <TableCell colSpan={7} className="h-24 text-center">
-                  Loading...
-                </TableCell>
-              </TableRow>
-            ) : leads.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={7} className="h-24 text-center">
-                  No leads found.
-                </TableCell>
-              </TableRow>
-            ) : (
-              leads.map((lead) => (
-                <TableRow
-                  key={lead.id}
-                  className="cursor-pointer hover:bg-muted/50"
-                  onClick={() => router.push(`/dashboard/leads/${lead.id}`)}
-                >
-                  <TableCell className="font-medium">
-                    {lead.customer.firstName} {lead.customer.lastName}
-                  </TableCell>
-                  <TableCell>
-                    <Badge className={getStatusColor(lead.status)}>
-                      {lead.status.replace("_", " ")}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>{lead.destinationInterest || "-"}</TableCell>
-                  <TableCell>
-                    {lead.potentialValue
-                      ? new Intl.NumberFormat("th-TH", {
-                          style: "currency",
-                          currency: "THB",
-                        }).format(lead.potentialValue)
-                      : "-"}
-                  </TableCell>
-                  <TableCell>{lead.source}</TableCell>
-                  <TableCell>
-                    {format(new Date(lead.updatedAt), "dd MMM yyyy")}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <Button variant="ghost" size="sm">
-                      View
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
+      <div className="relative flex flex-col gap-4 overflow-auto">
+        <div className="overflow-hidden rounded-md border">
+          <DataTable
+            table={table}
+            columns={columns}
+            onRowClick={(row) => router.push(`/dashboard/leads/${row.id}`)}
+          />
+        </div>
+        <DataTablePagination
+          table={table}
+          total={total}
+          pageSize={pageSize}
+          pageIndex={page - 1}
+          pageCount={pageCount}
+          onPageChange={handlePageChange}
+          onPageSizeChange={handlePageSizeChange}
+        />
       </div>
     </div>
   );
