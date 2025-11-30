@@ -23,6 +23,7 @@ import {
   type Task,
   type TaskFormValues,
 } from "../hooks/use-task";
+import { DeleteTaskDialog } from "./delete-task-dialog";
 
 interface CustomerTasksProps {
   customerId: string;
@@ -31,6 +32,8 @@ interface CustomerTasksProps {
 export function CustomerTasks({ customerId }: CustomerTasksProps) {
   const [page, setPage] = useState(1);
   const pageSize = 5;
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [taskToDelete, setTaskToDelete] = useState<string | null>(null);
 
   const form = useForm<TaskFormValues>({
     resolver: zodResolver(taskFormSchema),
@@ -85,13 +88,21 @@ export function CustomerTasks({ customerId }: CustomerTasksProps) {
     [updateTask]
   );
 
-  const handleDelete = useCallback(
-    (id: string) => {
-      if (!confirm("Are you sure you want to delete this task?")) return;
-      deleteTaskMutation.mutate(id);
-    },
-    [deleteTaskMutation]
-  );
+  const handleDeleteClick = useCallback((id: string) => {
+    setTaskToDelete(id);
+    setDeleteDialogOpen(true);
+  }, []);
+
+  const handleDeleteConfirm = useCallback(() => {
+    if (taskToDelete) {
+      deleteTaskMutation.mutate(taskToDelete, {
+        onSuccess: () => {
+          setDeleteDialogOpen(false);
+          setTaskToDelete(null);
+        },
+      });
+    }
+  }, [taskToDelete, deleteTaskMutation]);
 
   const handlePageChange = useCallback((newPage: number) => {
     setPage(newPage);
@@ -234,7 +245,7 @@ export function CustomerTasks({ customerId }: CustomerTasksProps) {
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => handleDelete(task.id)}
+                  onClick={() => handleDeleteClick(task.id)}
                   disabled={isLoadingData}
                   className="text-destructive hover:text-destructive"
                 >
@@ -275,6 +286,13 @@ export function CustomerTasks({ customerId }: CustomerTasksProps) {
           )}
         </>
       )}
+
+      <DeleteTaskDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        onConfirm={handleDeleteConfirm}
+        isDeleting={deleteTaskMutation.isPending}
+      />
     </div>
   );
 }

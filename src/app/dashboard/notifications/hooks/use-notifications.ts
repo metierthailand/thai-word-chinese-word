@@ -62,10 +62,10 @@ async function markNotificationAsRead(id: string): Promise<Notification> {
 }
 
 // Hook to fetch notifications with pagination
-export function useNotifications(page: number, pageSize: number, isRead?: string) {
+export function useNotifications(params: { page: number; pageSize: number; isRead?: string }) {
   return useQuery({
-    queryKey: notificationKeys.list(page, pageSize, isRead),
-    queryFn: () => fetchNotifications(page, pageSize, isRead),
+    queryKey: notificationKeys.list(params.page, params.pageSize, params.isRead),
+    queryFn: () => fetchNotifications(params.page, params.pageSize, params.isRead),
     staleTime: 30 * 1000, // 30 seconds
   });
 }

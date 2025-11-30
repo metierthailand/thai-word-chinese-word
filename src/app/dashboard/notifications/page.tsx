@@ -1,8 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo } from "react";
-import * as React from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { ColumnDef } from "@tanstack/react-table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -11,58 +10,24 @@ import { DataTable } from "@/components/data-table/data-table";
 import { useDataTableInstance } from "@/hooks/use-data-table-instance";
 import { DataTablePagination } from "@/components/data-table/data-table-pagination";
 import { useNotifications, useMarkNotificationAsRead, type Notification } from "./hooks/use-notifications";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { useNotificationsParams, mapNotificationsParamsToQuery } from "./hooks/use-notifications-params";
+import { NotificationFilter } from "./_components/notification-filter";
 import { Eye } from "lucide-react";
+import { Loading } from "@/components/page/loading";
 
 export default function NotificationsPage() {
   const router = useRouter();
-  const searchParams = useSearchParams();
 
-  // Get pagination and filter from URL params
-  const page = parseInt(searchParams.get("page") || "1", 10);
-  const pageSize = parseInt(searchParams.get("pageSize") || "20", 10);
-  const isReadFilter = searchParams.get("isRead") || undefined;
+  // --------------------
+  // params
+  // --------------------
+  const { page, pageSize, isRead, setParams } = useNotificationsParams();
 
-  // Function to update URL params
-  const updateSearchParams = useCallback(
-    (updates: { page?: number; pageSize?: number; isRead?: string }) => {
-      const params = new URLSearchParams(searchParams.toString());
-
-      if (updates.page !== undefined) {
-        if (updates.page === 1) {
-          params.delete("page");
-        } else {
-          params.set("page", updates.page.toString());
-        }
-      }
-
-      if (updates.pageSize !== undefined) {
-        if (updates.pageSize === 20) {
-          params.delete("pageSize");
-        } else {
-          params.set("pageSize", updates.pageSize.toString());
-        }
-      }
-
-      if (updates.isRead !== undefined) {
-        if (updates.isRead === "") {
-          params.delete("isRead");
-        } else {
-          params.set("isRead", updates.isRead);
-        }
-      }
-
-      const newUrl = params.toString() ? `?${params.toString()}` : "";
-      router.push(`/dashboard/notifications${newUrl}`, { scroll: false });
-    },
-    [searchParams, router]
-  );
+  const notificationsQuery = mapNotificationsParamsToQuery({
+    page,
+    pageSize,
+    isRead,
+  });
 
   const getTypeBadgeVariant = (type: Notification["type"]) => {
     switch (type) {
@@ -150,12 +115,10 @@ export default function NotificationsPage() {
     [router]
   );
 
-  // Use TanStack Query to fetch notifications
-  const { data: notificationsResponse, isLoading, error } = useNotifications(
-    page,
-    pageSize,
-    isReadFilter
-  );
+  // --------------------
+  // data fetching
+  // --------------------
+  const { data: notificationsResponse, isLoading, error } = useNotifications(notificationsQuery);
   const markAsReadMutation = useMarkNotificationAsRead();
 
   const notifications = useMemo(
@@ -191,26 +154,21 @@ export default function NotificationsPage() {
     }));
   }, [pageCount, notifications, table]);
 
-  // Handlers for pagination changes
+  // --------------------
+  // handlers
+  // --------------------
   const handlePageChange = useCallback(
     (newPageIndex: number) => {
-      updateSearchParams({ page: newPageIndex + 1 });
+      setParams({ page: newPageIndex + 1 });
     },
-    [updateSearchParams]
+    [setParams]
   );
 
   const handlePageSizeChange = useCallback(
     (newPageSize: number) => {
-      updateSearchParams({ pageSize: newPageSize, page: 1 }); // Reset to page 1 when changing page size
+      setParams({ pageSize: newPageSize, page: 1 });
     },
-    [updateSearchParams]
-  );
-
-  const handleFilterChange = useCallback(
-    (value: string) => {
-      updateSearchParams({ isRead: value, page: 1 }); // Reset to page 1 when changing filter
-    },
-    [updateSearchParams]
+    [setParams]
   );
 
   const handleRowClick = useCallback(
@@ -225,14 +183,11 @@ export default function NotificationsPage() {
     [markAsReadMutation, router]
   );
 
+  // --------------------
+  // states
+  // --------------------
   if (isLoading) {
-    return (
-      <div className="space-y-8 p-8">
-        <div className="flex h-64 items-center justify-center">
-          <p className="text-muted-foreground">Loading notifications...</p>
-        </div>
-      </div>
-    );
+    return <Loading />;
   }
 
   if (error) {
@@ -253,16 +208,7 @@ export default function NotificationsPage() {
           <p className="text-muted-foreground">View and manage your notifications.</p>
         </div>
         <div className="flex items-center gap-4">
-          <Select value={isReadFilter || "all"} onValueChange={handleFilterChange}>
-            <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="Filter by status" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Notifications</SelectItem>
-              <SelectItem value="false">Unread Only</SelectItem>
-              <SelectItem value="true">Read Only</SelectItem>
-            </SelectContent>
-          </Select>
+          <NotificationFilter isRead={isRead} />
         </div>
       </div>
 
