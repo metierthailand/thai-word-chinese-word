@@ -22,7 +22,13 @@ import {
 } from "@/components/ui/command";
 import { Check, ChevronsUpDown, CalendarIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useSearchCustomers, useCustomer, Customer } from "@/app/dashboard/customers/hooks/use-customers";
+import { useSearchCustomers, useCustomer } from "@/app/dashboard/customers/hooks/use-customers";
+import {
+  LEAD_STATUS_VALUES,
+  LEAD_STATUS_LABELS,
+  LEAD_SOURCE_VALUES,
+  LEAD_SOURCE_LABELS,
+} from "@/lib/constants/lead";
 import type { Lead } from "../hooks/use-leads";
 
 const formSchema = z.object({
@@ -121,12 +127,11 @@ export function LeadForm({ mode, initialData, onSubmit, onCancel, isLoading }: L
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    <SelectItem value="WEBSITE">Website</SelectItem>
-                    <SelectItem value="WALKIN">Walk-in</SelectItem>
-                    <SelectItem value="REFERRAL">Referral</SelectItem>
-                    <SelectItem value="SOCIAL">Social Media</SelectItem>
-                    <SelectItem value="LINE">LINE</SelectItem>
-                    <SelectItem value="OTHER">Other</SelectItem>
+                    {LEAD_SOURCE_VALUES.map((source) => (
+                      <SelectItem key={source} value={source}>
+                        {LEAD_SOURCE_LABELS[source]}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
                 <FormMessage />
@@ -147,11 +152,11 @@ export function LeadForm({ mode, initialData, onSubmit, onCancel, isLoading }: L
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    <SelectItem value="NEW">New</SelectItem>
-                    <SelectItem value="QUOTED">Quoted</SelectItem>
-                    <SelectItem value="FOLLOW_UP">Follow Up</SelectItem>
-                    <SelectItem value="CLOSED_WON">Closed Won</SelectItem>
-                    <SelectItem value="CLOSED_LOST">Closed Lost</SelectItem>
+                    {LEAD_STATUS_VALUES.map((status) => (
+                      <SelectItem key={status} value={status}>
+                        {LEAD_STATUS_LABELS[status]}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
                 <FormMessage />

@@ -54,24 +54,6 @@ const getStatusColor = (status: string) => {
   }
 };
 
-const getSourceLabel = (source: string) => {
-  switch (source) {
-    case "WEBSITE":
-      return "Website";
-    case "WALKIN":
-      return "Walk-in";
-    case "REFERRAL":
-      return "Referral";
-    case "SOCIAL":
-      return "Social Media";
-    case "LINE":
-      return "LINE";
-    case "OTHER":
-      return "Other";
-    default:
-      return source;
-  }
-};
 
 export default function LeadViewPage() {
   const router = useRouter();
@@ -202,12 +184,14 @@ export default function LeadViewPage() {
             <div>
               <p className="text-muted-foreground text-sm font-medium">Source</p>
               <Badge variant="outline" className="mt-1">
-                {getSourceLabel(lead.source)}
+                {getLeadSourceLabel(lead.source)}
               </Badge>
             </div>
             <div>
               <p className="text-muted-foreground text-sm font-medium">Status</p>
-              <Badge className={cn("mt-1", getStatusColor(lead.status))}>{lead.status.replace("_", " ")}</Badge>
+              <Badge className={cn("mt-1", getStatusColor(lead.status))}>
+                {getLeadStatusLabel(lead.status)}
+              </Badge>
             </div>
             {lead.potentialValue && (
               <div>

@@ -63,28 +63,15 @@ export async function GET(request: Request) {
       ? { customerId }
       : {};
 
-    const validStatuses = [
-      "NEW",
-      "QUOTED",
-      "FOLLOW_UP",
-      "CLOSED_WON",
-      "CLOSED_LOST",
-    ];
+    const { LEAD_STATUS_VALUES, LEAD_SOURCE_VALUES } = await import("@/lib/constants/lead");
+    
     const statusFilter: Prisma.LeadWhereInput =
-      status && validStatuses.includes(status)
+      status && LEAD_STATUS_VALUES.includes(status as LeadStatus)
         ? { status: status as LeadStatus }
         : {};
 
-    const validSources = [
-      "WEBSITE",
-      "WALKIN",
-      "REFERRAL",
-      "SOCIAL",
-      "LINE",
-      "OTHER",
-    ];
     const sourceFilter: Prisma.LeadWhereInput =
-      source && validSources.includes(source)
+      source && LEAD_SOURCE_VALUES.includes(source as LeadSource)
         ? { source: source as LeadSource }
         : {};
 

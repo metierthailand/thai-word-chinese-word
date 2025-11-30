@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Search, X } from "lucide-react";
 import { useDebounce } from "@/hooks/use-debounce";
+import { LEAD_SOURCE_LABELS, LEAD_SOURCE_VALUES, LEAD_STATUS_LABELS, LEAD_STATUS_VALUES } from "@/lib/constants/lead";
 
 interface LeadFilterProps {
   onFilterChange?: () => void;
@@ -106,7 +107,6 @@ export function LeadFilter({ onFilterChange }: LeadFilterProps) {
     setSource(sourceFilter || "ALL");
     setMinPotential(minPotentialQuery);
     setMaxPotential(maxPotentialQuery);
-     
   }, [searchQuery, statusFilter, sourceFilter, minPotentialQuery, maxPotentialQuery]);
 
   const handleClearSearch = () => {
@@ -129,11 +129,11 @@ export function LeadFilter({ onFilterChange }: LeadFilterProps) {
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="ALL">All Status</SelectItem>
-          <SelectItem value="NEW">New</SelectItem>
-          <SelectItem value="QUOTED">Quoted</SelectItem>
-          <SelectItem value="FOLLOW_UP">Follow Up</SelectItem>
-          <SelectItem value="CLOSED_WON">Closed Won</SelectItem>
-          <SelectItem value="CLOSED_LOST">Closed Lost</SelectItem>
+          {LEAD_STATUS_VALUES.map((status) => (
+            <SelectItem key={status} value={status}>
+              {LEAD_STATUS_LABELS[status]}
+            </SelectItem>
+          ))}
         </SelectContent>
       </Select>
 
@@ -150,12 +150,11 @@ export function LeadFilter({ onFilterChange }: LeadFilterProps) {
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="ALL">All Sources</SelectItem>
-          <SelectItem value="WEBSITE">Website</SelectItem>
-          <SelectItem value="WALKIN">Walk-in</SelectItem>
-          <SelectItem value="REFERRAL">Referral</SelectItem>
-          <SelectItem value="SOCIAL">Social Media</SelectItem>
-          <SelectItem value="LINE">LINE</SelectItem>
-          <SelectItem value="OTHER">Other</SelectItem>
+          {LEAD_SOURCE_VALUES.map((source) => (
+            <SelectItem key={source} value={source}>
+              {LEAD_SOURCE_LABELS[source]}
+            </SelectItem>
+          ))}
         </SelectContent>
       </Select>
 
