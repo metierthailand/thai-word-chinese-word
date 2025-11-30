@@ -1,36 +1,28 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { format } from "date-fns";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import { CalendarIcon } from "lucide-react";
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import { Check, ChevronsUpDown, CalendarIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useSearchCustomers, useCustomer, Customer } from "@/app/dashboard/customers/hooks/use-customers";
 import type { Lead } from "../hooks/use-leads";
 
 const formSchema = z.object({
@@ -43,33 +35,19 @@ const formSchema = z.object({
   notes: z.string().optional(),
 });
 
-interface CustomerOption {
-  id: string;
-  firstNameTh: string;
-  lastNameTh: string;
-  firstNameEn: string;
-  lastNameEn: string;
-}
-
 type LeadFormValues = z.infer<typeof formSchema>;
 
 interface LeadFormProps {
   mode: "create" | "edit" | "view";
   initialData?: Lead | null;
-  customers: CustomerOption[];
   onSubmit: (values: LeadFormValues) => Promise<void> | void;
   onCancel?: () => void;
   isLoading?: boolean;
 }
 
-export function LeadForm({
-  mode,
-  initialData,
-  customers,
-  onSubmit,
-  onCancel,
-  isLoading,
-}: LeadFormProps) {
+export function LeadForm({ mode, initialData, onSubmit, onCancel, isLoading }: LeadFormProps) {
+  const [customerSearchOpen, setCustomerSearchOpen] = useState(false);
+  const [customerSearchQuery, setCustomerSearchQuery] = useState("");
   const form = useForm<LeadFormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -77,13 +55,8 @@ export function LeadForm({
       source: initialData?.source ?? "WEBSITE",
       status: initialData?.status ?? "NEW",
       destinationInterest: initialData?.destinationInterest ?? "",
-      potentialValue:
-        initialData?.potentialValue != null
-          ? String(initialData.potentialValue)
-          : "",
-      travelDateEstimate: initialData?.travelDateEstimate
-        ? initialData.travelDateEstimate.substring(0, 10)
-        : "",
+      potentialValue: initialData?.potentialValue != null ? String(initialData.potentialValue) : "",
+      travelDateEstimate: initialData?.travelDateEstimate ? initialData.travelDateEstimate.substring(0, 10) : "",
       notes: initialData?.notes ?? "",
     },
   });
@@ -95,13 +68,8 @@ export function LeadForm({
         source: initialData.source,
         status: initialData.status,
         destinationInterest: initialData.destinationInterest ?? "",
-        potentialValue:
-          initialData.potentialValue != null
-            ? String(initialData.potentialValue)
-            : "",
-        travelDateEstimate: initialData.travelDateEstimate
-          ? initialData.travelDateEstimate.substring(0, 10)
-          : "",
+        potentialValue: initialData.potentialValue != null ? String(initialData.potentialValue) : "",
+        travelDateEstimate: initialData.travelDateEstimate ? initialData.travelDateEstimate.substring(0, 10) : "",
         notes: initialData.notes ?? "",
       });
     }
@@ -109,46 +77,36 @@ export function LeadForm({
 
   const disabled = mode === "view" || isLoading;
 
+  const customerId = form.watch("customerId");
+
+  // Search customers
+  const { data: searchResults = [], isLoading: isSearching } = useSearchCustomers(
+    customerSearchQuery,
+    10
+  );
+
+  // Fetch selected customer if not in search results
+  const { data: selectedCustomerData } = useCustomer(
+    customerId && !searchResults.find((c) => c.id === customerId) ? customerId : undefined
+  );
+
+  // Find selected customer to display name
+  const selectedCustomer = useMemo(() => {
+    if (!customerId) return null;
+    // Try to find in search results first
+    const found = searchResults.find((c) => c.id === customerId);
+    if (found) return found;
+    // If not found, use fetched customer data
+    return selectedCustomerData || null;
+  }, [customerId, searchResults, selectedCustomerData]);
+
   const handleSubmit = async (values: LeadFormValues) => {
     await onSubmit(values);
   };
 
   return (
     <Form {...form}>
-      <form
-        onSubmit={form.handleSubmit(handleSubmit)}
-        className="space-y-6"
-      >
-        <FormField
-          control={form.control}
-          name="customerId"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Customer</FormLabel>
-              <Select
-                onValueChange={field.onChange}
-                defaultValue={field.value}
-                disabled={disabled}
-              >
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select a customer" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  {customers.map((customer) => (
-                    <SelectItem key={customer.id} value={customer.id}>
-                      {customer.firstNameTh} {customer.lastNameTh} (
-                      {customer.firstNameEn} {customer.lastNameEn})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
+      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
         <div className="grid grid-cols-2 gap-4">
           <FormField
             control={form.control}
@@ -156,13 +114,9 @@ export function LeadForm({
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Source</FormLabel>
-                <Select
-                  onValueChange={field.onChange}
-                  defaultValue={field.value}
-                  disabled={disabled}
-                >
+                <Select onValueChange={field.onChange} defaultValue={field.value} disabled={disabled}>
                   <FormControl>
-                    <SelectTrigger>
+                    <SelectTrigger className="w-full">
                       <SelectValue placeholder="Select source" />
                     </SelectTrigger>
                   </FormControl>
@@ -186,13 +140,9 @@ export function LeadForm({
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Status</FormLabel>
-                <Select
-                  onValueChange={field.onChange}
-                  defaultValue={field.value}
-                  disabled={disabled}
-                >
+                <Select onValueChange={field.onChange} defaultValue={field.value} disabled={disabled}>
                   <FormControl>
-                    <SelectTrigger>
+                    <SelectTrigger className="w-full">
                       <SelectValue placeholder="Select status" />
                     </SelectTrigger>
                   </FormControl>
@@ -212,16 +162,106 @@ export function LeadForm({
 
         <FormField
           control={form.control}
+          name="customerId"
+          render={({ field }) => (
+            <FormItem className="col-span-2 flex flex-col">
+              <FormLabel>Customer</FormLabel>
+              {disabled ? (
+                <FormControl>
+                  <Input
+                    value={
+                      selectedCustomer
+                        ? `${selectedCustomer.firstNameTh} ${selectedCustomer.lastNameTh} (${selectedCustomer.firstNameEn} ${selectedCustomer.lastNameEn})`
+                        : ""
+                    }
+                    disabled
+                  />
+                </FormControl>
+              ) : (
+                <Popover open={customerSearchOpen} onOpenChange={setCustomerSearchOpen}>
+                  <PopoverTrigger asChild>
+                    <FormControl>
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        className={cn(
+                          "w-full justify-between",
+                          !field.value && "text-muted-foreground"
+                        )}
+                      >
+                        {selectedCustomer
+                          ? `${selectedCustomer.firstNameTh} ${selectedCustomer.lastNameTh} (${selectedCustomer.firstNameEn} ${selectedCustomer.lastNameEn})`
+                          : "Search for a customer..."}
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    </FormControl>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[400px] p-0">
+                    <Command shouldFilter={false}>
+                      <CommandInput
+                        placeholder="Search customers by name, email, or phone..."
+                        value={customerSearchQuery}
+                        onValueChange={setCustomerSearchQuery}
+                      />
+                      <CommandList>
+                        {isSearching ? (
+                          <div className="py-6 text-center text-sm text-muted-foreground">
+                            Searching...
+                          </div>
+                        ) : searchResults.length === 0 ? (
+                          <CommandEmpty>
+                            {customerSearchQuery ? "No customers found." : "Start typing to search..."}
+                          </CommandEmpty>
+                        ) : (
+                          <CommandGroup>
+                            {searchResults.map((customer) => (
+                              <CommandItem
+                                value={customer.id}
+                                key={customer.id}
+                                onSelect={() => {
+                                  field.onChange(customer.id);
+                                  setCustomerSearchOpen(false);
+                                  setCustomerSearchQuery("");
+                                }}
+                              >
+                                <Check
+                                  className={cn(
+                                    "mr-2 h-4 w-4",
+                                    customer.id === field.value ? "opacity-100" : "opacity-0"
+                                  )}
+                                />
+                                <div className="flex flex-col">
+                                  <span className="font-medium">
+                                    {customer.firstNameTh} {customer.lastNameTh}
+                                  </span>
+                                  <span className="text-xs text-muted-foreground">
+                                    {customer.firstNameEn} {customer.lastNameEn}
+                                    {customer.email && ` • ${customer.email}`}
+                                    {customer.phone && ` • ${customer.phone}`}
+                                  </span>
+                                </div>
+                              </CommandItem>
+                            ))}
+                          </CommandGroup>
+                        )}
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
+              )}
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
           name="destinationInterest"
           render={({ field }) => (
             <FormItem>
               <FormLabel>Destination Interest</FormLabel>
               <FormControl>
-                <Input
-                  placeholder="e.g. Japan, Europe"
-                  {...field}
-                  disabled={disabled}
-                />
+                <Input placeholder="e.g. Japan, Europe" {...field} disabled={disabled} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -236,12 +276,7 @@ export function LeadForm({
               <FormItem>
                 <FormLabel>Potential Value (THB)</FormLabel>
                 <FormControl>
-                  <Input
-                    type="number"
-                    placeholder="0.00"
-                    {...field}
-                    disabled={disabled}
-                  />
+                  <Input type="number" placeholder="0.00" {...field} disabled={disabled} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -261,14 +296,12 @@ export function LeadForm({
                         variant={"outline"}
                         className={cn(
                           "w-full justify-start text-left font-normal",
-                          !field.value && "text-muted-foreground"
+                          !field.value && "text-muted-foreground",
                         )}
                         disabled={disabled}
                       >
                         <CalendarIcon className="mr-2 h-4 w-4" />
-                        {field.value
-                          ? format(new Date(field.value), "dd MMM yyyy")
-                          : "Pick a date"}
+                        {field.value ? format(new Date(field.value), "dd MMM yyyy") : "Pick a date"}
                       </Button>
                     </FormControl>
                   </PopoverTrigger>
@@ -278,9 +311,7 @@ export function LeadForm({
                       mode="single"
                       selected={field.value ? new Date(field.value) : undefined}
                       onSelect={(date) => {
-                        field.onChange(
-                          date ? format(date, "yyyy-MM-dd") : ""
-                        );
+                        field.onChange(date ? format(date, "yyyy-MM-dd") : "");
                       }}
                       initialFocus
                     />
@@ -314,12 +345,7 @@ export function LeadForm({
         {mode !== "view" && (
           <div className="flex justify-end space-x-4">
             {onCancel && (
-              <Button
-                type="button"
-                variant="outline"
-                onClick={onCancel}
-                disabled={isLoading}
-              >
+              <Button type="button" variant="outline" onClick={onCancel} disabled={isLoading}>
                 Cancel
               </Button>
             )}
@@ -329,8 +355,8 @@ export function LeadForm({
                   ? "Creating..."
                   : "Saving..."
                 : mode === "create"
-                ? "Create Lead"
-                : "Save Changes"}
+                  ? "Create Lead"
+                  : "Save Changes"}
             </Button>
           </div>
         )}
@@ -338,5 +364,3 @@ export function LeadForm({
     </Form>
   );
 }
-
-

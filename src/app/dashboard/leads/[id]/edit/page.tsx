@@ -1,19 +1,10 @@
 "use client";
 
 import { useRouter, useParams } from "next/navigation";
-import { useEffect, useState } from "react";
 import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { LeadForm } from "../../_components/lead-form";
 import { useLead, useUpdateLead } from "../../hooks/use-leads";
-
-interface Customer {
-  id: string;
-  firstNameTh: string;
-  lastNameTh: string;
-  firstNameEn: string;
-  lastNameEn: string;
-}
 
 export default function LeadEditPage() {
   const router = useRouter();
@@ -21,19 +12,6 @@ export default function LeadEditPage() {
   const id = params?.id;
   const { data: lead, isLoading } = useLead(typeof id === "string" ? id : undefined);
   const updateLeadMutation = useUpdateLead();
-  const [customers, setCustomers] = useState<Customer[]>([]);
-
-  useEffect(() => {
-    const fetchCustomers = async () => {
-      const res = await fetch("/api/customers?page=1&pageSize=1000");
-      if (!res.ok) {
-        return;
-      }
-      const data = await res.json();
-      setCustomers(data.data ?? []);
-    };
-    fetchCustomers();
-  }, []);
 
   async function handleSubmit(values: {
     customerId: string;
@@ -86,7 +64,6 @@ export default function LeadEditPage() {
         <LeadForm
           mode="edit"
           initialData={lead}
-          customers={customers}
           onSubmit={handleSubmit}
           onCancel={() => router.back()}
           isLoading={updateLeadMutation.isPending}

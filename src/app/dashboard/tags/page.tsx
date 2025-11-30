@@ -115,18 +115,10 @@ export default function TagsPage() {
     enableRowSelection: false,
     defaultPageSize: pageSize,
     defaultPageIndex: page - 1,
+    manualPagination: true,
+    pageCount,
     getRowId: (row) => row.id,
   });
-
-  // Set manual pagination mode
-  useEffect(() => {
-    table.setOptions((prev) => ({
-      ...prev,
-      manualPagination: true,
-      pageCount,
-      data: tags,
-    }));
-  }, [pageCount, tags, table]);
 
   // --------------------
   // handlers

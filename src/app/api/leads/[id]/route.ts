@@ -29,6 +29,21 @@ export async function GET(
             email: true,
           },
         },
+        bookings: {
+          include: {
+            trip: {
+              select: {
+                name: true,
+                destination: true,
+                startDate: true,
+                endDate: true,
+              },
+            },
+          },
+          orderBy: {
+            createdAt: "desc",
+          },
+        },
       },
     });
 

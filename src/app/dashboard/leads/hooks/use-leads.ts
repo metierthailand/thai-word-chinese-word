@@ -1,6 +1,23 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
+export interface LeadBooking {
+  id: string;
+  tripId: string;
+  status: string;
+  visaStatus: string;
+  totalAmount: number;
+  paidAmount: number;
+  trip: {
+    name: string;
+    destination: string;
+    startDate: string;
+    endDate: string;
+  };
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface Lead {
   id: string;
   customerId: string;
@@ -24,6 +41,7 @@ export interface Lead {
   destinationInterest: string | null;
   travelDateEstimate: string | null;
   notes: string | null;
+  bookings?: LeadBooking[];
   createdAt: string;
   updatedAt: string;
 }
@@ -118,6 +136,11 @@ async function fetchLead(id: string): Promise<Lead> {
     ...data,
     potentialValue:
       data.potentialValue !== null ? Number(data.potentialValue) : null,
+    bookings: data.bookings?.map((booking: LeadBooking & { totalAmount: string | number; paidAmount: string | number }) => ({
+      ...booking,
+      totalAmount: Number(booking.totalAmount),
+      paidAmount: Number(booking.paidAmount),
+    })) || [],
   };
 }
 
