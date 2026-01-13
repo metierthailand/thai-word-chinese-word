@@ -12,6 +12,7 @@ import {
   CreditCard,
   ListTodo,
   MapPin,
+  House,
 } from "lucide-react";
 
 export interface NavSubItem {
@@ -98,9 +99,9 @@ export const sidebarItems: NavGroup[] = [
         icon: User,
       },
       {
-        title: "Family",
-        url: "/dashboard/family",
-        icon: Users,
+        title: "Families",
+        url: "/dashboard/families",
+        icon: House,
       },
     ],
   },
