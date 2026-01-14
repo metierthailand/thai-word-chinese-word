@@ -4,6 +4,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { Prisma, Role } from "@prisma/client";
 import { syncLeadStatusFromBooking } from "@/lib/services/lead-sync";
+import { calculateCommission, updateCommissionStatus } from "@/lib/services/commission-calculator";
 
 export async function GET(
   req: Request,
@@ -131,7 +132,6 @@ export async function PUT(
       note,
       extraPriceForSingleTraveller,
       roomType,
-      extraBed,
       extraPricePerBed,
       roomNote,
       seatType,
@@ -328,13 +328,19 @@ export async function PUT(
       return updatedBooking;
     });
 
-    // Update commission status if needed
+    // Calculate or update commission if paymentStatus changed
     try {
-      const { updateCommissionStatus } = await import("@/lib/services/commission-calculator");
-      await updateCommissionStatus(id);
+      // Check if paymentStatus changed to FULLY_PAID
+      if (paymentStatus && paymentStatus === "FULLY_PAID" && currentBooking.paymentStatus !== "FULLY_PAID") {
+        // Calculate and create commission if it doesn't exist
+        await calculateCommission(id);
+      } else if (paymentStatus && currentBooking.paymentStatus !== paymentStatus) {
+        // Update commission status if paymentStatus changed but not to FULLY_PAID
+        await updateCommissionStatus(id);
+      }
     } catch (commissionError) {
-      console.error("[COMMISSION_UPDATE_ERROR]", commissionError);
-      // Don't fail the booking update if commission update fails
+      console.error("[COMMISSION_ERROR]", commissionError);
+      // Don't fail the booking update if commission calculation/update fails
     }
 
     return NextResponse.json(booking);

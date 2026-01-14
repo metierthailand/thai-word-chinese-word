@@ -165,7 +165,7 @@ export function BookingForm({ mode, initialData, onSubmit, onCancel, isLoading =
       note: "",
       extraPriceForSingleTraveller: "",
       roomType: "DOUBLE_BED" as const,
-      extraPricePerBed: "0",
+      extraPricePerBed: "",
       roomNote: "",
       seatType: "WINDOW" as const,
       seatClass: undefined,
@@ -366,36 +366,38 @@ export function BookingForm({ mode, initialData, onSubmit, onCancel, isLoading =
       setEnableBedPrice(!!bedPrice && bedPrice !== "0");
       setEnableSeatPrice(!!seatPrice && seatPrice !== "0");
 
-      form.reset(
-        {
-          customerId: initialData.customerId || "",
-          tripId: initialData.tripId || "",
-          salesUserId: initialData.salesUserId || "",
-          companionCustomerIds: initialData.companionCustomerIds || [],
-          note: initialData.note || "",
-          extraPriceForSingleTraveller: singleTravellerPrice,
-          roomType: (initialData.roomType as "DOUBLE_BED" | "TWIN_BED") || ("DOUBLE_BED" as const),
-          extraPricePerBed: initialData.extraPricePerBed || "0",
-          roomNote: initialData.roomNote || "",
-          seatType: (initialData.seatType as "WINDOW" | "MIDDLE" | "AISLE") || ("WINDOW" as const),
-          seatClass: (initialData.seatClass as "FIRST_CLASS" | "BUSINESS_CLASS" | "LONG_LEG" | undefined) || undefined,
-          extraPricePerSeat: initialData.extraPricePerSeat || "",
-          seatNote: initialData.seatNote || "",
-          extraPricePerBag: bagPrice,
-          bagNote: initialData.bagNote || "",
-          discountPrice: discount,
-          discountNote: initialData.discountNote || "",
-          paymentStatus:
-            (initialData.paymentStatus as "DEPOSIT_PENDING" | "DEPOSIT_PAID" | "FULLY_PAID" | "CANCELLED") ||
-            ("DEPOSIT_PENDING" as const),
-          firstPaymentRatio:
-            (initialData.firstPaymentRatio as "FIRST_PAYMENT_100" | "FIRST_PAYMENT_50" | "FIRST_PAYMENT_30") ||
-            ("FIRST_PAYMENT_50" as const),
-          firstPaymentAmount: initialData.firstPaymentAmount || "",
-          firstPaymentProof: initialData.firstPaymentProof || "",
-        },
-        { keepDefaultValues: false },
-      );
+      // Build reset data object, preserving actual values from initialData
+      const resetData: BookingFormValues = {
+        customerId: initialData.customerId ?? "",
+        tripId: initialData.tripId ?? "",
+        salesUserId: initialData.salesUserId ?? "",
+        companionCustomerIds: initialData.companionCustomerIds ?? [],
+        note: initialData.note ?? "",
+        extraPriceForSingleTraveller: singleTravellerPrice,
+        roomType: (initialData.roomType as "DOUBLE_BED" | "TWIN_BED") ?? ("DOUBLE_BED" as const),
+        extraPricePerBed: initialData.extraPricePerBed ?? "",
+        roomNote: initialData.roomNote ?? "",
+        seatType: (initialData.seatType as "WINDOW" | "MIDDLE" | "AISLE") ?? ("WINDOW" as const),
+        seatClass: initialData.seatClass
+          ? (initialData.seatClass as "FIRST_CLASS" | "BUSINESS_CLASS" | "LONG_LEG")
+          : undefined,
+        extraPricePerSeat: initialData.extraPricePerSeat ?? "",
+        seatNote: initialData.seatNote ?? "",
+        extraPricePerBag: bagPrice,
+        bagNote: initialData.bagNote ?? "",
+        discountPrice: discount,
+        discountNote: initialData.discountNote ?? "",
+        paymentStatus: initialData.paymentStatus
+          ? (initialData.paymentStatus as "DEPOSIT_PENDING" | "DEPOSIT_PAID" | "FULLY_PAID" | "CANCELLED")
+          : ("DEPOSIT_PENDING" as const),
+        firstPaymentRatio: initialData.firstPaymentRatio
+          ? (initialData.firstPaymentRatio as "FIRST_PAYMENT_100" | "FIRST_PAYMENT_50" | "FIRST_PAYMENT_30")
+          : ("FIRST_PAYMENT_50" as const),
+        firstPaymentAmount: initialData.firstPaymentAmount ?? "",
+        firstPaymentProof: initialData.firstPaymentProof ?? "",
+      };
+
+      form.reset(resetData, { keepDefaultValues: false });
     }
   }, [initialData, form]);
 
@@ -468,6 +470,8 @@ export function BookingForm({ mode, initialData, onSubmit, onCancel, isLoading =
       console.error("Failed to create customer:", error);
     }
   };
+
+  console.log({ formValues: form.getValues() });
 
   return (
     <Form {...form}>
@@ -1053,7 +1057,7 @@ export function BookingForm({ mode, initialData, onSubmit, onCancel, isLoading =
                       <Input value={field.value} disabled />
                     </FormControl>
                   ) : (
-                    <Select onValueChange={field.onChange} value={field.value}>
+                    <Select onValueChange={field.onChange} value={field.value} key={`roomType-${field.value}`}>
                       <FormControl>
                         <SelectTrigger className="w-full">
                           <SelectValue />
@@ -1176,7 +1180,11 @@ export function BookingForm({ mode, initialData, onSubmit, onCancel, isLoading =
                       <Input value={field.value || ""} disabled />
                     </FormControl>
                   ) : (
-                    <Select onValueChange={field.onChange} value={field.value || ""}>
+                    <Select
+                      onValueChange={field.onChange}
+                      value={field.value ?? ""}
+                      key={`seatClass-${field.value ?? "empty"}`}
+                    >
                       <FormControl>
                         <SelectTrigger className="w-full">
                           <SelectValue placeholder="Select seat class" />
@@ -1271,7 +1279,7 @@ export function BookingForm({ mode, initialData, onSubmit, onCancel, isLoading =
                       <Input value={field.value} disabled />
                     </FormControl>
                   ) : (
-                    <Select onValueChange={field.onChange} value={field.value}>
+                    <Select onValueChange={field.onChange} value={field.value} key={`paymentStatus-${field.value}`}>
                       <FormControl>
                         <SelectTrigger className="w-full">
                           <SelectValue />
@@ -1301,7 +1309,7 @@ export function BookingForm({ mode, initialData, onSubmit, onCancel, isLoading =
                       <Input value={field.value} disabled />
                     </FormControl>
                   ) : (
-                    <Select onValueChange={field.onChange} value={field.value}>
+                    <Select onValueChange={field.onChange} value={field.value} key={`firstPaymentRatio-${field.value}`}>
                       <FormControl>
                         <SelectTrigger className="w-full">
                           <SelectValue />

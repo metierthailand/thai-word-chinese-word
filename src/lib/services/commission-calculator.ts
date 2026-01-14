@@ -1,72 +1,6 @@
 import { prisma } from "@/lib/prisma";
-import { CommissionType, CommissionStatus } from "@prisma/client";
+import { CommissionStatus } from "@prisma/client";
 import Decimal from "decimal.js";
-
-interface Booking {
-  id: string;
-  leadId: string | null;
-  agentId: string | null;
-  totalAmount: number | Decimal;
-  paidAmount: number | Decimal;
-}
-
-/**
- * Get the agent who should receive commission for a booking
- * Priority: Lead Agent > Booking Agent
- */
-export async function getCommissionAgent(booking: Booking): Promise<{
-  agentId: string;
-  commissionRate: number;
-  type: CommissionType;
-} | null> {
-  // Priority 1: Lead Agent (if booking has a lead)
-  if (booking.leadId) {
-    const lead = await prisma.lead.findUnique({
-      where: { id: booking.leadId },
-      include: {
-        agent: {
-          select: {
-            id: true,
-            commissionPerHead: true,
-          },
-        },
-      },
-    });
-
-    if (lead && lead.agent) {
-      return {
-        agentId: lead.agent.id,
-        commissionRate: lead.agent.commissionPerHead
-          ? new Decimal(lead.agent.commissionPerHead.toString()).toNumber()
-          : 0,
-        type: "SALES",
-      };
-    }
-  }
-
-  // Priority 2: Booking Agent (walk-in or no lead)
-  if (booking.agentId) {
-    const agent = await prisma.user.findUnique({
-      where: { id: booking.agentId },
-      select: {
-        id: true,
-        commissionPerHead: true,
-      },
-    });
-
-    if (agent) {
-      return {
-        agentId: agent.id,
-        commissionRate: agent.commissionPerHead
-          ? new Decimal(agent.commissionPerHead.toString()).toNumber()
-          : 0,
-        type: booking.leadId ? "SERVICE" : "WALKIN",
-      };
-    }
-  }
-
-  return null;
-}
 
 /**
  * Calculate and create commission for a booking
@@ -153,9 +87,6 @@ export async function calculateCommission(bookingId: string) {
     data: {
       bookingId,
       agentId: salesUser.id,
-      leadId: null, // New schema doesn't have leadId
-      type: "SALES",
-      rate: commissionRate,
       amount: amount.toNumber(),
       status,
       note: `Auto-generated commission for sales user (FULLY_PAID)`,

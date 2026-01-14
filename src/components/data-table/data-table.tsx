@@ -41,9 +41,11 @@ function renderTableBody<TData, TValue>({
   onRowClick?: (row: TData) => void;
 }) {
   if (!table.getRowModel().rows.length) {
+    // Get column count from table headers if columns prop is not available
+    const columnCount = columns?.length || table.getHeaderGroups()[0]?.headers.length || 1;
     return (
       <TableRow>
-        <TableCell colSpan={columns.length} className="h-24 text-center">
+        <TableCell colSpan={columnCount} className="h-24 text-center">
           No results.
         </TableCell>
       </TableRow>

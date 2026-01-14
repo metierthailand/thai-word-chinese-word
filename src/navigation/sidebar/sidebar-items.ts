@@ -93,6 +93,7 @@ export const sidebarItems: NavGroup[] = [
         title: "Commission",
         url: "/dashboard/commissions",
         icon: CreditCard,
+        roles: ["SUPER_ADMIN", "ADMIN"],
       },
     ],
   },
