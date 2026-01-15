@@ -1386,13 +1386,9 @@ export function BookingForm({ mode, initialData, onSubmit, onCancel, isLoading =
                       {field.value ? (
                         <div className="space-y-2">
                           <div className="bg-muted relative h-48 w-full overflow-hidden rounded-md border">
-                            <Image
-                              src={field.value}
-                              alt="Proof of Payment"
-                              fill
-                              className="object-contain"
-                              unoptimized
-                            />
+                            <picture>
+                              <img src={field.value} alt="Proof of Payment" className="object-contain" />
+                            </picture>
                           </div>
                           <a
                             href={field.value}
@@ -1413,13 +1409,9 @@ export function BookingForm({ mode, initialData, onSubmit, onCancel, isLoading =
                         {field.value ? (
                           <div className="space-y-2">
                             <div className="bg-muted relative h-48 w-full overflow-hidden rounded-md border">
-                              <Image
-                                src={field.value}
-                                alt="Proof of Payment"
-                                fill
-                                className="object-contain"
-                                unoptimized
-                              />
+                              <picture>
+                                <img src={field.value} alt="Proof of Payment" className="object-contain" />
+                              </picture>
                               <Button
                                 type="button"
                                 variant="destructive"
@@ -1464,7 +1456,7 @@ export function BookingForm({ mode, initialData, onSubmit, onCancel, isLoading =
                           />
                         )}
                       </FormControl>
-                      <FormDescription>Upload proof of payment (max 10MB, JPG/PNG/PDF only)</FormDescription>
+                      <FormDescription>Upload proof of payment (max 10MB)</FormDescription>
                     </>
                   )}
                   <FormMessage />

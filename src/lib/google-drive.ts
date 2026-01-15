@@ -1,6 +1,8 @@
 import { google } from "googleapis";
 import { Readable } from "stream";
 
+const esc = (s: string) => s.replace(/'/g, "\\'");
+
 /**
  * Initialize Google Drive API client
  */
@@ -11,10 +13,7 @@ export function getDriveClient() {
       private_key: process.env.GOOGLE_DRIVE_PRIVATE_KEY?.replace(/\\n/g, "\n"),
       project_id: process.env.GOOGLE_DRIVE_PROJECT_ID,
     },
-    scopes: [
-      "https://www.googleapis.com/auth/drive.file",
-      "https://www.googleapis.com/auth/drive",
-    ],
+    scopes: ["https://www.googleapis.com/auth/drive"],
   });
 
   return google.drive({ version: "v3", auth });
@@ -27,111 +26,79 @@ export function getDriveClient() {
  */
 export async function findOrCreateFolder(
   drive: ReturnType<typeof getDriveClient>,
-  folderName: string
+  folderName: string,
 ): Promise<string> {
-  // Clean folderName (remove query strings and handle path separators)
   const cleanFolderName = folderName.split("?")[0].trim();
-  
-  // If folderName is a folder ID (starts with specific pattern), use it directly
-  // Google Drive folder IDs are typically alphanumeric strings
+
+  // If folderName looks like an ID, validate it
   if (/^[a-zA-Z0-9_-]{20,}$/.test(cleanFolderName)) {
-    // Verify the folder exists and is accessible
-    try {
-      const folder = await drive.files.get({
-        fileId: cleanFolderName,
-        fields: "id, name, mimeType",
-        supportsAllDrives: true,
-      });
-      if (folder.data.mimeType === "application/vnd.google-apps.folder") {
-        return cleanFolderName;
-      }
-    } catch {
-      throw new Error(
-        `Folder ID "${cleanFolderName}" not found or not accessible. Make sure the folder is shared with the Service Account.`
-      );
+    const folder = await drive.files.get({
+      fileId: cleanFolderName,
+      fields: "id, name, mimeType",
+      supportsAllDrives: true,
+    });
+    if (folder.data.mimeType === "application/vnd.google-apps.folder") {
+      return cleanFolderName;
     }
+    throw new Error(`"${cleanFolderName}" is not a folder`);
   }
 
-  // If root folder ID is specified, use it directly (don't try to create subfolders)
-  // Service Accounts cannot create folders in regular folders due to quota restrictions
   let rootFolderId = process.env.GOOGLE_DRIVE_ROOT_FOLDER_ID;
-  if (rootFolderId) {
-    // Clean folder ID (remove query strings like ?usp=drive_link)
-    rootFolderId = rootFolderId.split("?")[0].trim();
-    
-    // Verify root folder is accessible
-    try {
-      const rootFolder = await drive.files.get({
-        fileId: rootFolderId,
-        fields: "id, name, mimeType",
-        supportsAllDrives: true,
-      });
-      
-      if (rootFolder.data.mimeType === "application/vnd.google-apps.folder") {
-        // If folderName is just a path (like "passports/john_smith"), 
-        // try to find or create subfolder, otherwise use root folder
-        if (cleanFolderName.includes("/")) {
-          const pathParts = cleanFolderName.split("/");
-          let currentFolderId = rootFolderId;
-          
-          // Navigate/create each level of the path
-          for (const part of pathParts) {
-            if (!part.trim()) continue;
-            
-            // Search for existing subfolder
-            const response = await drive.files.list({
-              q: `name='${part}' and mimeType='application/vnd.google-apps.folder' and trashed=false and '${currentFolderId}' in parents`,
-              fields: "files(id, name)",
-              spaces: "drive",
-              includeItemsFromAllDrives: true,
-              supportsAllDrives: true,
-            });
-            
-            if (response.data.files && response.data.files.length > 0) {
-              currentFolderId = response.data.files[0].id!;
-            } else {
-              // Try to create subfolder (may fail for Service Accounts)
-              try {
-                const newFolder = await drive.files.create({
-                  requestBody: {
-                    name: part,
-                    mimeType: "application/vnd.google-apps.folder",
-                    parents: [currentFolderId],
-                  },
-                  fields: "id",
-                  supportsAllDrives: true,
-                });
-                currentFolderId = newFolder.data.id!;
-              } catch {
-                // If can't create subfolder, use parent folder instead
-                console.warn(`Cannot create subfolder "${part}", using parent folder instead`);
-                break;
-              }
-            }
-          }
-          
-          return currentFolderId;
-        }
-        
-        // If folderName is not a path, use root folder directly
-        return rootFolderId;
-      }
-    } catch (error) {
-      const errorMsg = error instanceof Error ? error.message : String(error);
-      throw new Error(
-        `Root folder "${rootFolderId}" not accessible. Error: ${errorMsg}\n` +
-        `Make sure:\n` +
-        `1. The folder is shared with Service Account: ${process.env.GOOGLE_DRIVE_CLIENT_EMAIL}\n` +
-        `2. The Service Account has "Editor" permission\n` +
-        `3. The folder ID is correct`
-      );
-    }
+  if (!rootFolderId) {
+    throw new Error(
+      `Please set GOOGLE_DRIVE_ROOT_FOLDER_ID and share it with Service Account (${process.env.GOOGLE_DRIVE_CLIENT_EMAIL}).`,
+    );
   }
 
-  // If no root folder is set, throw error
-  throw new Error(
-    `Folder "${cleanFolderName}" not found. Please set GOOGLE_DRIVE_ROOT_FOLDER_ID in .env and share the folder with the Service Account.`
-  );
+  rootFolderId = rootFolderId.split("?")[0].trim();
+
+  // verify root folder
+  const rootFolder = await drive.files.get({
+    fileId: rootFolderId,
+    fields: "id, name, mimeType",
+    supportsAllDrives: true,
+  });
+  if (rootFolder.data.mimeType !== "application/vnd.google-apps.folder") {
+    throw new Error("GOOGLE_DRIVE_ROOT_FOLDER_ID is not a folder");
+  }
+
+  // if you want subfolders: treat folderName as path relative to root
+  const pathParts = cleanFolderName
+    .split("/")
+    .map((p) => p.trim())
+    .filter(Boolean);
+  let currentFolderId = rootFolderId;
+
+  for (const part of pathParts) {
+    const list = await drive.files.list({
+      q: `name='${esc(part)}' and mimeType='application/vnd.google-apps.folder' and trashed=false and '${currentFolderId}' in parents`,
+      fields: "files(id, name)",
+      spaces: "drive",
+      includeItemsFromAllDrives: true,
+      supportsAllDrives: true,
+    });
+
+    const existing = list.data.files?.[0];
+    if (existing?.id) {
+      currentFolderId = existing.id;
+      continue;
+    }
+
+    const created = await drive.files.create({
+      requestBody: {
+        name: part,
+        mimeType: "application/vnd.google-apps.folder",
+        parents: [currentFolderId],
+      },
+      fields: "id",
+      supportsAllDrives: true,
+    });
+
+    if (!created.data.id) throw new Error("Failed to create folder");
+    currentFolderId = created.data.id;
+  }
+
+  return currentFolderId;
 }
 
 /**
@@ -141,37 +108,38 @@ export async function uploadFileToDrive(
   fileBuffer: Buffer,
   fileName: string,
   mimeType: string,
-  folderId: string
+  folderId: string,
 ): Promise<{ fileId: string; fileUrl: string }> {
   const drive = getDriveClient();
-
-  // Convert Buffer to stream for Google Drive API
   const stream = Readable.from(fileBuffer);
 
-  const file = await drive.files.create({
-    requestBody: {
-      name: fileName,
-      parents: [folderId],
-    },
-    media: {
-      mimeType,
-      body: stream,
-    },
-    fields: "id, webViewLink, webContentLink",
+  const created = await drive.files.create({
+    requestBody: { name: fileName, parents: [folderId] },
+    media: { mimeType, body: stream },
+    fields: "id",
     supportsAllDrives: true,
   });
 
-  // Make file publicly viewable (optional - remove if you want private files)
-  await drive.permissions.create({
-    fileId: file.data.id!,
-    requestBody: {
-      role: "reader",
-      type: "anyone",
-    },
-  });
+  const fileId = created.data.id!;
+  if (!fileId) throw new Error("Upload failed: no fileId returned");
+
+  // Public permission (optional)
+  // await drive.permissions.create({
+  //   fileId,
+  //   requestBody: { role: "reader", type: "anyone" },
+  //   supportsAllDrives: true,
+  //   fields: "id",
+  // });
+  // Note: File permissions are inherited from parent folder
+  // If parent folder is set to "Anyone with the link", files will inherit that permission
+  // No need to set individual file permissions to avoid inheritance conflicts
+
+  // Return proxy API URL for reliable image display
+  // The proxy endpoint handles authentication and serves the file directly
+  const imageUrl = `/api/google-drive/image/${fileId}`;
 
   return {
-    fileId: file.data.id!,
-    fileUrl: file.data.webViewLink || file.data.webContentLink || "",
+    fileId,
+    fileUrl: imageUrl,
   };
 }

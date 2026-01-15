@@ -4,7 +4,7 @@ import { useEffect, useState, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
-import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -112,8 +112,12 @@ export function TaskForm({ mode, initialData, onSubmit, onCancel, isLoading = fa
             name="contact"
             render={({ field }) => (
               <FormItem>
-                <FormLabel required>Contact</FormLabel>
-                <Select onValueChange={field.onChange} value={field.value} disabled={readOnly || isLoading}>
+                <FormLabel>Contact</FormLabel>
+                <Select
+                  onValueChange={field.onChange}
+                  value={field.value ?? undefined}
+                  disabled={readOnly || isLoading}
+                >
                   <FormControl>
                     <SelectTrigger className="w-full">
                       <SelectValue placeholder="Select contact" />

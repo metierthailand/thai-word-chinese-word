@@ -3,7 +3,7 @@
 import { useMemo, useCallback } from "react";
 import { ColumnDef } from "@tanstack/react-table";
 import Link from "next/link";
-import { Plus, Edit, Eye } from "lucide-react";
+import { Edit, Eye } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { DataTable } from "@/components/data-table/data-table";
@@ -146,11 +146,11 @@ export default function CustomersPage() {
           <h2 className="text-3xl font-bold tracking-tight">Customers</h2>
           <p className="text-muted-foreground">Manage your individual and corporate clients.</p>
         </div>
-        <Link href="/dashboard/customers/create">
+        {/* <Link href="/dashboard/customers/create">
           <Button>
             <Plus className="mr-2 h-4 w-4" /> Add Customer
           </Button>
-        </Link>
+        </Link> */}
       </div>
 
       {/* Filter & Search form */}

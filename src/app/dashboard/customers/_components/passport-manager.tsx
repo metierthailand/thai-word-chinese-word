@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { format } from "date-fns";
-import { CalendarIcon, Pencil, Plus, Trash2, Check, ChevronsUpDown } from "lucide-react";
+import { CalendarIcon, Pencil, Plus, Trash2, Check, ChevronsUpDown, Eye } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
@@ -44,6 +44,8 @@ interface PassportManagerProps {
 export function PassportManager({ customerId, passports }: PassportManagerProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [editingPassport, setEditingPassport] = useState<PassportInput | null>(null);
+  const [isViewOpen, setIsViewOpen] = useState(false);
+  const [viewingPassport, setViewingPassport] = useState<Passport | null>(null);
 
   const createPassport = useCreatePassport(customerId);
   const updatePassport = useUpdatePassport(customerId);
@@ -83,6 +85,11 @@ export function PassportManager({ customerId, passports }: PassportManagerProps)
       isPrimary: passport.isPrimary,
     });
     setIsOpen(true);
+  };
+
+  const handleView = (passport: Passport) => {
+    setViewingPassport(passport);
+    setIsViewOpen(true);
   };
 
   const handleDelete = async (id: string) => {
@@ -154,18 +161,10 @@ export function PassportManager({ customerId, passports }: PassportManagerProps)
                       <div className="text-red-500">Expires: {format(new Date(passport.expiryDate), "PP")}</div>
                     </div>
                   </div>
-                  {passport.imageUrl && (
-                    <div className="relative h-20 w-28 shrink-0 overflow-hidden rounded border">
-                      <picture>
-                        <img
-                          src={passport.imageUrl}
-                          alt={`Passport ${passport.passportNumber}`}
-                          className="object-cover"
-                        />
-                      </picture>
-                    </div>
-                  )}
                   <div className="flex gap-2 opacity-0 transition-opacity group-hover:opacity-100">
+                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleView(passport)}>
+                      <Eye className="h-4 w-4" />
+                    </Button>
                     <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleEdit(passport)}>
                       <Pencil className="h-4 w-4" />
                     </Button>
@@ -327,6 +326,37 @@ export function PassportManager({ customerId, passports }: PassportManagerProps)
                 </DialogFooter>
               </form>
             </Form>
+          </DialogContent>
+        </Dialog>
+
+        {/* View Passport Image Dialog */}
+        <Dialog open={isViewOpen} onOpenChange={setIsViewOpen}>
+          <DialogContent className="max-w-4xl">
+            <DialogHeader>
+              <DialogTitle>Passport Image</DialogTitle>
+              <DialogDescription>
+                {viewingPassport && (
+                  <>
+                    {viewingPassport.issuingCountry} - {viewingPassport.passportNumber}
+                  </>
+                )}
+              </DialogDescription>
+            </DialogHeader>
+            {viewingPassport?.imageUrl ? (
+              <div className="flex items-center justify-center">
+                <div className="relative max-h-[70vh] w-full overflow-hidden rounded-md border">
+                  <picture>
+                    <img
+                      src={viewingPassport.imageUrl}
+                      alt={`Passport ${viewingPassport.passportNumber}`}
+                      className="h-full w-full object-contain"
+                    />
+                  </picture>
+                </div>
+              </div>
+            ) : (
+              <div className="text-muted-foreground flex h-64 items-center justify-center">No image available</div>
+            )}
           </DialogContent>
         </Dialog>
       </CardContent>

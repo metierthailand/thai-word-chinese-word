@@ -3,28 +3,29 @@ import { toast } from "sonner";
 import z from "zod";
 import Decimal from "decimal.js";
 import { Passport as PassportType } from "./types";
+import { phoneNumberFormat } from "@/utils/zod-format";
 
 export const customerFormSchema = z.object({
   firstNameTh: z.string().optional(),
   lastNameTh: z.string().optional(),
   firstNameEn: z.string().min(1, {
-    message: "First name (English) is required.",
+    message: "Please fill in the information.",
   }),
   lastNameEn: z.string().min(1, {
-    message: "Last name (English) is required.",
+    message: "Please fill in the information.",
   }),
   title: z
     .string({
-      message: "Title is required.",
+      message: "Please select the information.",
     })
     .refine((val) => ["MR", "MRS", "MISS", "MASTER", "OTHER"].includes(val), {
       message: "Title must be one of: MR, MRS, MISS, MASTER, OTHER",
     }),
   email: z.string().email().optional().or(z.literal("")),
-  phone: z.string().optional(),
+  phone: phoneNumberFormat,
   lineId: z.string().optional(),
   dateOfBirth: z.string().min(1, {
-    message: "Date of birth is required.",
+    message: "Please fill in the information.",
   }),
   note: z.string().optional(),
   tagIds: z.array(z.string()).optional(),
@@ -33,11 +34,11 @@ export const customerFormSchema = z.object({
   addresses: z
     .array(
       z.object({
-        address: z.string().min(1, "Address is required"),
-        province: z.string().min(1, "Province is required"),
-        district: z.string().min(1, "District is required"),
-        subDistrict: z.string().min(1, "Sub-district is required"),
-        postalCode: z.string().min(1, "Postal code is required"),
+        address: z.string().min(1, "Please fill in the information."),
+        province: z.string().min(1, "Please fill in the information."),
+        district: z.string().min(1, "Please fill in the information."),
+        subDistrict: z.string().min(1, "Please fill in the information."),
+        postalCode: z.string().min(1, "Please fill in the information."),
       }),
     )
     .optional(),
@@ -45,28 +46,24 @@ export const customerFormSchema = z.object({
   passports: z
     .array(
       z.object({
-        passportNumber: z.string().min(1, "Passport number is required"),
-        issuingCountry: z.string().min(1, "Issuing country is required"),
-        issuingDate: z
-          .union([z.string(), z.date()])
-          .refine(
-            (val) => {
-              if (val === null || val === undefined || val === "") return false;
-              if (typeof val === "string" && val.trim() === "") return false;
-              return true;
-            },
-            { message: "Issuing date is required" }
-          ),
-        expiryDate: z
-          .union([z.string(), z.date()])
-          .refine(
-            (val) => {
-              if (val === null || val === undefined || val === "") return false;
-              if (typeof val === "string" && val.trim() === "") return false;
-              return true;
-            },
-            { message: "Expiry date is required" }
-          ),
+        passportNumber: z.string().min(1, "Please fill in the information."),
+        issuingCountry: z.string().min(1, "Please fill in the information."),
+        issuingDate: z.union([z.string(), z.date()]).refine(
+          (val) => {
+            if (val === null || val === undefined || val === "") return false;
+            if (typeof val === "string" && val.trim() === "") return false;
+            return true;
+          },
+          { message: "Please fill in the information." },
+        ),
+        expiryDate: z.union([z.string(), z.date()]).refine(
+          (val) => {
+            if (val === null || val === undefined || val === "") return false;
+            if (typeof val === "string" && val.trim() === "") return false;
+            return true;
+          },
+          { message: "Please fill in the information." },
+        ),
         imageUrl: z.string().optional().nullable(),
         isPrimary: z.boolean(),
       }),

@@ -21,7 +21,6 @@ import { customerFormSchema, CustomerFormValues } from "../hooks/use-customers";
 import { getProvinces, getDistrict, getSubDistrict, getPostCode } from "@/utils/thailand-geography";
 import { DragDropUpload } from "@/components/upload-image";
 import { X } from "lucide-react";
-import Image from "next/image";
 import { toast } from "sonner";
 
 interface Tag {
@@ -113,6 +112,7 @@ export function CustomerForm({
     await onSubmit(values);
   }
 
+  console.log({ form: form.getValues() });
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
@@ -313,7 +313,7 @@ export function CustomerForm({
               <FormItem>
                 <FormLabel>Phone Number</FormLabel>
                 <FormControl>
-                  <Input placeholder="0912345678" {...field} />
+                  <Input placeholder="Phone Number" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -328,7 +328,7 @@ export function CustomerForm({
             <FormItem>
               <FormLabel>Email</FormLabel>
               <FormControl>
-                <Input placeholder="john@example.com" {...field} />
+                <Input placeholder="Email" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -342,7 +342,7 @@ export function CustomerForm({
             <FormItem>
               <FormLabel>LINE ID</FormLabel>
               <FormControl>
-                <Input placeholder="@johndoe" {...field} />
+                <Input placeholder="LINE ID" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -417,7 +417,7 @@ export function CustomerForm({
                     <FormItem className="col-span-2">
                       <FormLabel>Address</FormLabel>
                       <FormControl>
-                        <Input {...field} placeholder="123 Main St" />
+                        <Input {...field} placeholder="Address" />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -716,7 +716,7 @@ export function CustomerForm({
                     <FormItem>
                       <FormLabel required>Passport Number</FormLabel>
                       <FormControl>
-                        <Input {...field} placeholder="A12345678" />
+                        <Input {...field} placeholder="Passport Number" />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -851,14 +851,18 @@ export function CustomerForm({
                   name={`passports.${index}.imageUrl`}
                   render={({ field }) => {
                     const imageUrl = field.value;
-                    const firstName = form.watch("firstNameEn") || "unknown";
-                    const lastName = form.watch("lastNameEn") || "unknown";
+                    const firstName = form.watch("firstNameEn") || "";
+                    const lastName = form.watch("lastNameEn") || "";
                     const customerName = `${firstName}_${lastName}`;
                     // Sanitize folder name: remove special characters, replace spaces with underscores
-                    const sanitizedName = customerName
-                      .replace(/[^a-zA-Z0-9ก-๙\s_]/g, "")
-                      .replace(/\s+/g, "_")
-                      .toLowerCase();
+                    const sanitizedName =
+                      customerName !== "_"
+                        ? customerName
+                            .replace(/[^a-zA-Z0-9ก-๙\s_]/g, "")
+                            .replace(/\s+/g, "_")
+                            .toLowerCase()
+                        : new Date().toISOString();
+
                     const folderName = `passports/${sanitizedName}`;
 
                     return (
@@ -867,7 +871,9 @@ export function CustomerForm({
                         {imageUrl ? (
                           <div className="space-y-2">
                             <div className="bg-muted relative h-48 w-full overflow-hidden rounded-md border">
-                              <Image src={imageUrl} alt="Passport" fill className="object-contain" unoptimized />
+                              <picture>
+                                <img src={imageUrl} alt="Passport" className="h-full w-full object-contain" />
+                              </picture>
                               <Button
                                 type="button"
                                 variant="destructive"
@@ -895,7 +901,7 @@ export function CustomerForm({
                             className="w-full"
                           />
                         )}
-                        <FormDescription>Upload a clear image of the passport (max 5MB, JPG/PNG only)</FormDescription>
+                        <FormDescription>Upload a clear image of the passport (max 5MB)</FormDescription>
                         <FormMessage />
                       </FormItem>
                     );
@@ -987,7 +993,7 @@ export function CustomerForm({
                     <FormItem>
                       <FormLabel>Note</FormLabel>
                       <FormControl>
-                        <Input {...field} placeholder="Specific details about allergy..." />
+                        <Textarea {...field} placeholder="Specific details about allergy..." className="resize-none" />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
