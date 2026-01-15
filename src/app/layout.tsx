@@ -13,8 +13,21 @@ import { Providers } from "@/components/Providers";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Thai Word Chinese Word - Admin",
+  title: "Thai Chinese Talk - Admin",
   description: "Travel Agent CRM & Trip Management",
+  robots: {
+    index: false,
+    follow: false,
+    nocache: true,
+    googleBot: {
+      index: false,
+      follow: false,
+      noimageindex: true,
+      "max-video-preview": -1,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+    },
+  },
 };
 
 export default async function RootLayout({ children }: Readonly<{ children: ReactNode }>) {

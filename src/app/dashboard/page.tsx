@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Users, FileText, Plane, DollarSign } from "lucide-react";
+import { Loading } from "@/components/page/loading";
 
 interface RecentLead {
   id: string;
@@ -64,21 +65,17 @@ export default function DashboardPage() {
   }, []);
 
   if (loading) {
-    return <div className="p-8">Loading dashboard...</div>;
+    return <Loading />;
   }
 
   return (
-    <div className="p-8 space-y-8">
+    <div className="space-y-8 p-8">
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-3xl font-bold tracking-tight">Dashboard</h2>
-          <p className="text-muted-foreground">
-            Welcome back, {session?.user?.name || "Agent"}
-          </p>
+          <p className="text-muted-foreground">Welcome back, {session?.user?.name || "Agent"}</p>
         </div>
-        <div className="flex items-center gap-4">
-           {/* Add any global actions here */}
-        </div>
+        <div className="flex items-center gap-4">{/* Add any global actions here */}</div>
       </div>
 
       {/* Stats Grid */}
@@ -86,7 +83,7 @@ export default function DashboardPage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Customers</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
+            <Users className="text-muted-foreground h-4 w-4" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats?.customerCount || 0}</div>
@@ -95,7 +92,7 @@ export default function DashboardPage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Active Leads</CardTitle>
-            <FileText className="h-4 w-4 text-muted-foreground" />
+            <FileText className="text-muted-foreground h-4 w-4" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats?.activeLeadsCount || 0}</div>
@@ -104,7 +101,7 @@ export default function DashboardPage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Pending Bookings</CardTitle>
-            <Plane className="h-4 w-4 text-muted-foreground" />
+            <Plane className="text-muted-foreground h-4 w-4" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats?.pendingBookingsCount || 0}</div>
@@ -113,7 +110,7 @@ export default function DashboardPage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
+            <DollarSign className="text-muted-foreground h-4 w-4" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
@@ -136,13 +133,13 @@ export default function DashboardPage() {
           <CardContent>
             <div className="space-y-4">
               {stats?.recentBookings.length === 0 ? (
-                <p className="text-sm text-muted-foreground">No recent bookings.</p>
+                <p className="text-muted-foreground text-sm">No recent bookings.</p>
               ) : (
                 stats?.recentBookings.map((booking) => (
                   <div key={booking.id} className="flex items-center">
                     <div className="ml-4 space-y-1">
-                      <p className="text-sm font-medium leading-none">{booking.trip?.name || "Unknown Trip"}</p>
-                      <p className="text-sm text-muted-foreground">
+                      <p className="text-sm leading-none font-medium">{booking.trip?.name || "Unknown Trip"}</p>
+                      <p className="text-muted-foreground text-sm">
                         {booking.customer?.firstNameTh || booking.customer?.firstNameEn || ""}{" "}
                         {booking.customer?.lastNameTh || booking.customer?.lastNameEn || ""}
                       </p>
@@ -167,20 +164,18 @@ export default function DashboardPage() {
           <CardContent>
             <div className="space-y-4">
               {stats?.recentLeads.length === 0 ? (
-                <p className="text-sm text-muted-foreground">No recent leads.</p>
+                <p className="text-muted-foreground text-sm">No recent leads.</p>
               ) : (
                 stats?.recentLeads.map((lead) => (
                   <div key={lead.id} className="flex items-center justify-between">
                     <div className="space-y-1">
-                      <p className="text-sm font-medium leading-none">
-                        {lead.tripInterest || "General Inquiry"}
-                      </p>
-                      <p className="text-sm text-muted-foreground">
+                      <p className="text-sm leading-none font-medium">{lead.tripInterest || "General Inquiry"}</p>
+                      <p className="text-muted-foreground text-sm">
                         {lead.customer?.firstNameTh || lead.firstName || ""}{" "}
                         {lead.customer?.lastNameTh || lead.lastName || ""}
                       </p>
                     </div>
-                    <div className="text-sm text-muted-foreground">
+                    <div className="text-muted-foreground text-sm">
                       {lead.status?.replace(/_/g, " ") || lead.status}
                     </div>
                   </div>
